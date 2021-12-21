@@ -66,7 +66,7 @@ class ViewController: UIViewController {
                     pdf.beginNewPage()
                     let userData : [String :Any] = getData()
                     pdfPageHeader(pdf, userData)
-                    pdf.addText("检查项目&结果", font: UIFont.systemFont(ofSize: 20), textColor: .darkGray)
+                    pdf.addText("檢查項目&結果", font: UIFont.systemFont(ofSize: 20), textColor: .darkGray)
                     pdfPageHealthItem(pdf, healthItems, tableHeaderColor, false)
                 }
                 
@@ -88,7 +88,7 @@ class ViewController: UIViewController {
         //获取 columnCount + 第一列 + 参考值
         let columnCount = healthItems.count + 2
         
-        var tableHeader = ["", "参考值"]
+        var tableHeader = ["", "參考值"]
         
         var keyArr:[String] = []
         
@@ -184,11 +184,11 @@ class ViewController: UIViewController {
         pdf.addLineSeparator()
         pdf.addVerticalSpace(5)
         pdf.setContentAlignment(.left)
-        pdf.addText("输出时间：" + userInfo["date"]!, font: UIFont.systemFont(ofSize: 20), textColor: .darkGray)
+        pdf.addText("輸出時間：" + userInfo["date"]!, font: UIFont.systemFont(ofSize: 20), textColor: .darkGray)
         
-        let sex = userInfo["sex"] == "1" ? "男" : "女"
+        let sex = userInfo["sex"] == "1" ? "女" : "男"
         pdf.addText("ID " + userInfo["num"]! + " | " + sex + " | " + userInfo["age"]!, font: UIFont.systemFont(ofSize: 20), textColor: .darkGray)
-        pdf.addText("记录区间：" + userInfo["recordTime"]!, font: UIFont.systemFont(ofSize: 20), textColor: .darkGray)
+        pdf.addText("紀錄區間：" + userInfo["recordTime"]!, font: UIFont.systemFont(ofSize: 20), textColor: .darkGray)
         
         pdf.addVerticalSpace(5)
         pdf.addLineSeparator()
@@ -243,7 +243,7 @@ class ViewController: UIViewController {
                     pdfPageHeader(pdf, userData)
                 }
                 
-                pdf.addText("检查项目&结果", font: UIFont.systemFont(ofSize: 20), textColor: .darkGray)
+                pdf.addText("檢查項目&結果", font: UIFont.systemFont(ofSize: 20), textColor: .darkGray)
                 pdfPageHealthItem(pdf, elementArr, color, true)
                 NSLog("一组数据结束")
                 elementArr = []
@@ -278,23 +278,23 @@ class ViewController: UIViewController {
         
         //第一组数据
         let dict : [String :Any] = ["key":"height", "title":"身高", "value": "02","refenrence":"02"]
-        let dict1 : [String :Any] = ["key":"weight", "title":"体重", "value": "12","refenrence":"12"]
-        let dict2 : [String :Any] = ["key":"eye", "title":"视力", "value": "4.8","refenrence":"5.0"]
-        let dict21 : [String :Any] = ["key":"boolth", "title":"牙齿", "value": "4.8","refenrence":"5.0"]
+        let dict1 : [String :Any] = ["key":"weight", "title":"體重", "value": "12","refenrence":"12"]
+        let dict2 : [String :Any] = ["key":"eye", "title":"視力", "value": "4.8","refenrence":"5.0"]
+        let dict21 : [String :Any] = ["key":"boolth", "title":"牙齒", "value": "4.8","refenrence":"5.0"]
         let dict22 : [String :Any] = ["key":"righteye", "title":"右眼", "value": "4.8","refenrence":"5.0"]
-        let dict23 : [String :Any] = ["key":"heart", "title":"心脏", "value": "4.8","refenrence":"5.0"]
+        let dict23 : [String :Any] = ["key":"heart", "title":"心臟", "value": "4.8","refenrence":"5.0"]
         let dict24 : [String :Any] = ["key":"blood", "title":"血液", "value": "4.8","refenrence":"5.0"]
         let dict25 : [String :Any] = ["key":"hand", "title":"手", "value": "4.8","refenrence":"5.0"]
         let dict26 : [String :Any] = ["key":"leg", "title":"腿", "value": "4.8","refenrence":"5.0"]
-        let dict27 : [String :Any] = ["key":"boolth1", "title":"牙齿1", "value": "4.8","refenrence":"5.0"]
+        let dict27 : [String :Any] = ["key":"boolth1", "title":"牙齒1", "value": "4.8","refenrence":"5.0"]
         let dict28 : [String :Any] = ["key":"righteye1", "title":"右眼1", "value": "4.8","refenrence":"5.0"]
-        let dict29 : [String :Any] = ["key":"heart1", "title":"心脏1", "value": "4.8","refenrence":"5.0"]
+        let dict29 : [String :Any] = ["key":"heart1", "title":"心臟1", "value": "4.8","refenrence":"5.0"]
         let dict30 : [String :Any] = ["key":"blood1", "title":"血液1", "value": "4.8","refenrence":"5.0"]
         let dict31 : [String :Any] = ["key":"hand1", "title":"手1", "value": "4.8","refenrence":"5.0"]
         let dict32 : [String :Any] = ["key":"leg1", "title":"腿1", "value": "4.8","refenrence":"5.0"]
-        let dict33 : [String :Any] = ["key":"boolth11", "title":"牙齿11", "value": "4.8","refenrence":"5.0"]
+        let dict33 : [String :Any] = ["key":"boolth11", "title":"牙齒11", "value": "4.8","refenrence":"5.0"]
         let dict34 : [String :Any] = ["key":"righteye11", "title":"右眼11", "value": "4.8","refenrence":"5.0"]
-        let dict35 : [String :Any] = ["key":"heart11", "title":"心脏11", "value": "4.8","refenrence":"5.0"]
+        let dict35 : [String :Any] = ["key":"heart11", "title":"心臟11", "value": "4.8","refenrence":"5.0"]
         let dict36 : [String :Any] = ["key":"blood11", "title":"血液11", "value": "4.8","refenrence":"5.0"]
         let dict37 : [String :Any] = ["key":"hand11", "title":"手11", "value": "4.8","refenrence":"5.0"]
         let dict38 : [String :Any] = ["key":"leg11", "title":"腿11", "value": "4.8","refenrence":"5.0"]
@@ -327,8 +327,8 @@ class ViewController: UIViewController {
         
         //第二组数据
         let dict3 : [String :Any] = ["key":"height", "title":"身高", "value": "01","refenrence":"02"]
-        let dict4 : [String :Any] = ["key":"weight", "title":"体重", "value": "13","refenrence":"12"]
-        let dict5 : [String :Any] = ["key":"eye", "title":"视力", "value": "4.9","refenrence":"5.0"]
+        let dict4 : [String :Any] = ["key":"weight", "title":"體重", "value": "13","refenrence":"12"]
+        let dict5 : [String :Any] = ["key":"eye", "title":"視力", "value": "4.9","refenrence":"5.0"]
  
         var arr2 = [Dictionary<String, Any>]()
         arr2.append(dict3)
@@ -357,8 +357,8 @@ class ViewController: UIViewController {
         
         //第三组数据
         let dict6 : [String :Any] = ["key":"height", "title":"身高", "value": "03","refenrence":"02"]
-        let dict7 : [String :Any] = ["key":"weight", "title":"体重", "value": "11","refenrence":"12"]
-        let dict8 : [String :Any] = ["key":"eye", "title":"视力", "value": "5.0","refenrence":"5.0"]
+        let dict7 : [String :Any] = ["key":"weight", "title":"體重", "value": "11","refenrence":"12"]
+        let dict8 : [String :Any] = ["key":"eye", "title":"視力", "value": "5.0","refenrence":"5.0"]
  
         var arr3 = [Dictionary<String, Any>]()
         arr3.append(dict6)
@@ -388,8 +388,8 @@ class ViewController: UIViewController {
         
         //第四组数据
         let dict9 : [String :Any] = ["key":"height", "title":"身高", "value": "03","refenrence":"02"]
-        let dict10 : [String :Any] = ["key":"weight", "title":"体重", "value": "11","refenrence":"12"]
-        let dict11 : [String :Any] = ["key":"eye", "title":"视力", "value": "5.0","refenrence":"5.0"]
+        let dict10 : [String :Any] = ["key":"weight", "title":"體重", "value": "11","refenrence":"12"]
+        let dict11 : [String :Any] = ["key":"eye", "title":"視力", "value": "5.0","refenrence":"5.0"]
  
         var arr4 = [Dictionary<String, Any>]()
         arr4.append(dict9)
@@ -418,7 +418,7 @@ class ViewController: UIViewController {
         
         let healthArr = [healthItem1, healthItem2, healthItem3, healthItem4]//, healthItem5, healthItem6, healthItem7]
         
-        let headers :[String :Any] = ["icon":"https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fbpic.588ku.com%2Felement_origin_min_pic%2F18%2F04%2F12%2F869e346b51422808fb45bf7f21a8d248.jpg&refer=http%3A%2F%2Fbpic.588ku.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1642584092&t=c423fd7d2d0315b1044f7782d0014355", "title":"健康检查记录表", "hospital": "台中馆"]
+        let headers :[String :Any] = ["icon":"", "title":"健康檢查紀錄表", "hospital": "台中館"]
         let userInfo :[String :Any] = ["date":"2021/10/20", "num":"0933-123-456", "sex": "1", "age": "50", "recordTime": "2021年11月～2021年12月17日"]
         
         let healthInfo : [String: Any] = ["headers": headers, "userInfo": userInfo, "healthItems": healthArr, "color": "0"]
