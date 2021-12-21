@@ -15,6 +15,7 @@
 		1867EFAD27704E21006B67BB /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1867EFAB27704E21006B67BB /* LaunchScreen.storyboard */; };
 		1867EFD1277084FD006B67BB /* test.png in Resources */ = {isa = PBXBuildFile; fileRef = 1867EFD0277084FD006B67BB /* test.png */; };
 		1867EFD52771CDD2006B67BB /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1867EFD42771CDD2006B67BB /* ViewController.swift */; };
+		1867EFD92771D8C1006B67BB /* data666.json in Resources */ = {isa = PBXBuildFile; fileRef = 1867EFD82771D8C1006B67BB /* data666.json */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		1867EFAE27704E21006B67BB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		1867EFD0277084FD006B67BB /* test.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = test.png; sourceTree = "<group>"; };
 		1867EFD42771CDD2006B67BB /* ViewController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		1867EFD82771D8C1006B67BB /* data666.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = data666.json; sourceTree = "<group>"; };
 		BDCC98083DDF41DBF4EE9F78 /* Pods-FIHSimplePDF.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FIHSimplePDF.debug.xcconfig"; path = "Target Support Files/Pods-FIHSimplePDF/Pods-FIHSimplePDF.debug.xcconfig"; sourceTree = "<group>"; };
 		EAF44EDB64D97A1FB2B18135 /* Pods_FIHSimplePDF.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_FIHSimplePDF.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -65,6 +67,7 @@
 		1867EF9F27704E20006B67BB /* FIHSimplePDF */ = {
 			isa = PBXGroup;
 			children = (
+				1867EFD82771D8C1006B67BB /* data666.json */,
 				1867EFA027704E20006B67BB /* AppDelegate.swift */,
 				1867EFA227704E20006B67BB /* SceneDelegate.swift */,
 				1867EFD42771CDD2006B67BB /* ViewController.swift */,
@@ -155,6 +158,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				1867EFAD27704E21006B67BB /* LaunchScreen.storyboard in Resources */,
+				1867EFD92771D8C1006B67BB /* data666.json in Resources */,
 				1867EFD1277084FD006B67BB /* test.png in Resources */,
 				1867EFAA27704E21006B67BB /* Assets.xcassets in Resources */,
 				1867EFA827704E20006B67BB /* Main.storyboard in Resources */,

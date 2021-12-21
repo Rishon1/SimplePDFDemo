@@ -423,6 +423,18 @@ class ViewController: UIViewController {
         
         let healthInfo : [String: Any] = ["headers": headers, "userInfo": userInfo, "healthItems": healthArr, "color": "0"]
         
+        // 字典或者数组 转 JSON
+        let jsonData = try! JSONSerialization.data(withJSONObject: healthInfo, options: .prettyPrinted)
+        let str = String(data: jsonData, encoding: .utf8)
+        
+        //路径
+        let path = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0]
+        
+        let filePath = path  + "/data666.json"
+
+        try! str!.write(toFile: filePath, atomically: true, encoding: String.Encoding.utf8)
+        print(filePath) //取件地址 点击桌面->前往->输入地址跳转取件
+        
         return healthInfo
     }
 }
