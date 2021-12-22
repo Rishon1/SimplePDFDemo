@@ -11,6 +11,8 @@ import SimplePDF
 import WebKit
 class ViewController: UIViewController {
     var webView : WKWebView!
+    var documentsFileName : String!
+    var shareTitle: String!
 
     
     fileprivate func pdfHealthTableItem(_ keyArr: [String], _ healthItems: [Any], _ itemWidth: CGFloat, _ flagColor: inout [String], _ pdf: SimplePDF, _ columnCount: Int, _ tableHeader: [Any], _ tableHeaderColor: String) {
@@ -197,14 +199,23 @@ class ViewController: UIViewController {
     }
     
     
+    @objc func shareBtnDidClick() {
+        if documentsFileName == nil {
+            return
+        }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        NSLog("123启动了")
+        let shareItems:[Any] = [ shareTitle as Any, UIImage.init(named: "test") as Any, URL.init(fileURLWithPath: documentsFileName) as Any]
+        let activityVC: UIActivityViewController = UIActivityViewController.init(activityItems: shareItems, applicationActivities: nil)
         
+        self.present(activityVC, animated: true, completion: nil)
+    }
+    
+    
+    @objc func btnDidClick() {
         let webConfig = WKWebViewConfiguration()
-        webView = WKWebView(frame: view.frame, configuration: webConfig)
-        view = webView
+        let frame = CGRect.init(x: 0, y: 130, width: view.frame.width, height: view.frame.height - 100)
+        webView = WKWebView(frame: frame, configuration: webConfig)
+        view.addSubview(webView)
         
         let userData : [String :Any] = getData()
         
@@ -254,14 +265,19 @@ class ViewController: UIViewController {
         
         if let documentDirectories = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first {
             
-            let fileName = "example.pdf"
-            let documentsFileName = documentDirectories + "/" + fileName
+            let headers:[String : Any] = userData["headers"] as! [String : Any]
+            
+            let title = headers["title"] as! String
+            
+            shareTitle = "\(title)"
+            
+            documentsFileName = documentDirectories + "/" + shareTitle + ".pdf"
             
             let pdfData = pdf.generatePDFdata()
             do{
                 try pdfData.write(to: URL(fileURLWithPath: documentsFileName), options: .atomic)
                 print("\nThe generated pdf can be found at:")
-                print("\n\t\(documentsFileName)\n")
+                print("\n\t\(String(describing: documentsFileName))\n")
                 
                 
                 webView.load(pdfData, mimeType: "application/pdf", characterEncodingName: "GBK", baseURL:NSURL.init(fileURLWithPath: "") as URL)
@@ -269,6 +285,29 @@ class ViewController: UIViewController {
                 print(error)
             }
         }
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        NSLog("123启动了")
+        
+        let btn = UIButton.init(type: .custom)
+        btn.frame = CGRect.init(x: 30, y: 60, width: 100, height: 44)
+        btn.setTitle("獲取數據", for: .normal)
+        btn.setTitleColor(.red, for: .normal)
+        btn.layer.borderColor = UIColor.red.cgColor
+        btn.layer.borderWidth = 1
+        btn.addTarget(self, action: #selector(btnDidClick), for: .touchUpInside)
+        view.addSubview(btn)
+        
+        let shareBtn = UIButton.init(type: .custom)
+        shareBtn.frame = CGRect.init(x: 200, y: 60, width: 100, height: 44)
+        shareBtn.setTitle("分享文件", for: .normal)
+        shareBtn.setTitleColor(.black, for: .normal)
+        shareBtn.layer.borderColor = UIColor.black.cgColor
+        shareBtn.layer.borderWidth = 1
+        shareBtn.addTarget(self, action: #selector(shareBtnDidClick), for: .touchUpInside)
+        view.addSubview(shareBtn)
     }
     
     
