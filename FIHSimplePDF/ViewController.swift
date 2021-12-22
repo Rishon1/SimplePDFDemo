@@ -204,9 +204,9 @@ class ViewController: UIViewController {
             return
         }
     
-        //不要放图片，不然 Airdrop 发送失败
-        let shareItems:[Any] = [ shareTitle as Any, URL.init(fileURLWithPath: documentsFileName) as Any]
-        let activityVC: UIActivityViewController = UIActivityViewController.init(activityItems: shareItems, applicationActivities: nil)
+        //只要放 文件路径名称，不要放图片，不然 Airdrop 发送失败
+        let shareItems:[Any] = [URL.init(fileURLWithPath: documentsFileName) as Any]
+        let activityVC: UIActivityViewController = UIActivityViewController.init(activityItems: shareItems, applicationActivities:nil)
         //排除分享途径
         activityVC.excludedActivityTypes = [.postToFacebook, .mail]
         
