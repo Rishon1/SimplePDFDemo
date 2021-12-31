@@ -2,8 +2,8 @@
 //  SimplePDF.swift
 //  SimplePDF
 //
-//  Created by Nutchaphon Rewik on 13/01/2016.
-//  Copyright Â© 2016 Nutchaphon Rewik. All rights reserved.
+//  Created by FIH on 2021/12/23.
+//  Copyright © 2021 FIH. All rights reserved.
 //
 
 import UIKit
@@ -16,7 +16,14 @@ private enum SimplePDFCommand {
     case addLineSpace(CGFloat)
     case addHorizontalSpace(CGFloat)
     case addLineSeparator(height: CGFloat)
+    case addFIHLineSeparator(size: CGSize, lineColor: UIColor)
+    
     case addTable(rowCount: Int, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat?, tableLineWidth: CGFloat, font: UIFont?, tableDefinition:TableDefinition?, dataArray: Array<Array<String>>)
+    
+    case addFIHTable(rowCount: Int, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat?, tableLineWidth: CGFloat, font: UIFont?, tableDefinition:TableDefinition?, dataArray: Array<Array<Any>>, columnLine: [Bool]?, rowLine:[Bool]?, imageSize: CGSize?, rowFirstLineShow:Bool?)
+    
+    case addTableLine(rowCount: Int, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat?, tableLineWidth: CGFloat, tableDefinition:TableDefinition?)
+    
     
     case setContentAlignment(ContentAlignment)
     case beginNewPage
@@ -139,12 +146,104 @@ open class SimplePDF {
         commands += [ .addLineSeparator(height: height) ]
     }
     
+    open func addFIHLineSeparator(size: CGSize = CGSize.init(width: 100, height: 1.0), lineColor: UIColor = .black) {
+        commands += [ .addFIHLineSeparator(size: size, lineColor:lineColor)]
+    }
+    
     open func addTable(_ rowCount: Int, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat, tableLineWidth: CGFloat, font: UIFont, dataArray: Array<Array<String>>) {
         commands += [ .addTable(rowCount: rowCount, columnCount: columnCount, rowHeight: rowHeight, columnWidth: columnWidth, tableLineWidth: tableLineWidth, font: font, tableDefinition: nil, dataArray: dataArray) ]
     }
     
     open func addTable(_ rowCount: Int, columnCount: Int, rowHeight: CGFloat, tableLineWidth: CGFloat, tableDefinition: TableDefinition, dataArray: Array<Array<String>>) {
         commands += [ .addTable(rowCount: rowCount, columnCount: columnCount, rowHeight: rowHeight, columnWidth: nil, tableLineWidth: tableLineWidth, font: nil, tableDefinition: tableDefinition, dataArray: dataArray) ]
+    }
+    
+    // MARK: FIH 新增 相關方法
+    /// 繪製表格數據（默認 表格線條 都展示）
+    /// - Parameters:
+    ///   - rowCount: 行數
+    ///   - columnCount: 列數
+    ///   - rowHeight: 行高
+    ///   - tableLineWidth: 邊框線寬
+    ///   - tableDefinition: 表格內容 屬性
+    ///   - dataArray: 數據源
+    open func addFIHTable(_ rowCount: Int, columnCount: Int, rowHeight: CGFloat, tableLineWidth: CGFloat, tableDefinition: TableDefinition, dataArray: Array<Array<Any>>, imageSize:CGSize = CGSize(width: 65.0, height: 65.0), rowFirstLineShow: Bool = true) {
+        commands += [ .addFIHTable(rowCount: rowCount, columnCount: columnCount, rowHeight: rowHeight, columnWidth: nil, tableLineWidth: tableLineWidth, font: nil, tableDefinition: tableDefinition, dataArray: dataArray, columnLine: nil, rowLine: nil, imageSize:imageSize, rowFirstLineShow: rowFirstLineShow) ]
+    }
+    
+    
+    /// 繪製表格數據
+    /// - Parameters:
+    ///   - rowCount: 行數
+    ///   - columnCount: 列數
+    ///   - rowHeight: 行高
+    ///   - tableLineWidth: 邊框線寬
+    ///   - tableDefinition: 表格內容 屬性
+    ///   - dataArray: 數據源
+    ///   - columnLine: 豎線展示控制，數組個數與 列數一直
+    open func addFIHTable(_ rowCount: Int,
+                          columnCount: Int,
+                          rowHeight: CGFloat,
+                          tableLineWidth: CGFloat,
+                          tableDefinition: TableDefinition,
+                          dataArray: Array<Array<Any>>,
+                          columnLine: [Bool],
+                          imageSize:CGSize = CGSize(width: 65.0, height: 65.0),
+                          rowFirstLineShow: Bool = true) {
+        commands += [ .addFIHTable(rowCount: rowCount, columnCount: columnCount, rowHeight: rowHeight, columnWidth: nil, tableLineWidth: tableLineWidth, font: nil, tableDefinition: tableDefinition, dataArray: dataArray, columnLine: columnLine, rowLine: nil, imageSize: imageSize, rowFirstLineShow: rowFirstLineShow) ]
+    }
+    
+    /// 繪製表格數據
+    /// - Parameters:
+    ///   - rowCount: 行數
+    ///   - columnCount: 列數
+    ///   - rowHeight: 行高
+    ///   - tableLineWidth: 邊框線寬
+    ///   - tableDefinition: 表格內容 屬性
+    ///   - dataArray: 數據源
+    ///   - rowLine: 橫線展示控制，個數與 行數一直
+    open func addFIHTable(_ rowCount: Int,
+                          columnCount: Int,
+                          rowHeight: CGFloat,
+                          tableLineWidth: CGFloat,
+                          tableDefinition: TableDefinition,
+                          dataArray: Array<Array<Any>>,
+                          rowLine: [Bool],
+                          imageSize:CGSize = CGSize(width: 65.0, height: 65.0),
+                          rowFirstLineShow: Bool = true) {
+        commands += [ .addFIHTable(rowCount: rowCount, columnCount: columnCount, rowHeight: rowHeight, columnWidth: nil, tableLineWidth: tableLineWidth, font: nil, tableDefinition: tableDefinition, dataArray: dataArray, columnLine: nil, rowLine: rowLine, imageSize: imageSize, rowFirstLineShow: rowFirstLineShow) ]
+    }
+    
+    /// 繪製表格數據
+    /// - Parameters:
+    ///   - rowCount: 行數
+    ///   - columnCount: 列數
+    ///   - rowHeight: 行高
+    ///   - tableLineWidth: 邊框線寬
+    ///   - tableDefinition: 表格內容 屬性
+    ///   - dataArray: 數據源
+    ///   - columnLine: 豎線展示控制，數組個數與 列數一直
+    ///   - rowLine: 橫線展示控制，個數與 行數一直
+    open func addFIHTable(_ rowCount: Int,
+                          columnCount: Int,
+                          rowHeight: CGFloat,
+                          tableLineWidth: CGFloat,
+                          tableDefinition: TableDefinition,
+                          dataArray: Array<Array<Any>>,
+                          columnLine: [Bool],
+                          rowLine: [Bool],
+                          imageSize:CGSize = CGSize(width: 65.0, height: 65.0),
+                          rowFirstLineShow: Bool = true) {
+        commands += [ .addFIHTable(rowCount: rowCount, columnCount: columnCount, rowHeight: rowHeight, columnWidth: nil, tableLineWidth: tableLineWidth, font: nil, tableDefinition: tableDefinition, dataArray: dataArray, columnLine: columnLine, rowLine: rowLine, imageSize: imageSize, rowFirstLineShow: rowFirstLineShow) ]
+    }
+    
+    
+    open func addTableLine(rowCount: Int, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat, tableLineWidth: CGFloat) {
+        commands += [ .addTableLine(rowCount: rowCount, columnCount: columnCount, rowHeight: rowHeight, columnWidth: columnWidth, tableLineWidth: tableLineWidth, tableDefinition: nil)]
+    }
+    
+    open func addTableLine(rowCount: Int, columnCount: Int, rowHeight: CGFloat, tableLineWidth: CGFloat, tableDefinition: TableDefinition) {
+        commands += [ .addTableLine(rowCount: rowCount, columnCount: columnCount, rowHeight: rowHeight, columnWidth: nil, tableLineWidth: tableLineWidth, tableDefinition: tableDefinition)]
     }
     
     open func setContentAlignment(_ alignment: ContentAlignment) {
@@ -304,6 +403,30 @@ open class SimplePDF {
         return renderingRect
     }
     
+    fileprivate func drawFIHLineSeparator(size: CGSize, currentOffset: CGPoint, lineColor: UIColor) -> CGRect {
+        
+        let drawRect = CGRect(x: currentOffset.x, y: currentOffset.y, width: size.width, height: size.height)
+        let path = UIBezierPath(rect: drawRect).cgPath
+        
+        // Get the graphics context.
+        let currentContext = UIGraphicsGetCurrentContext()!
+        
+        // Set color
+        lineColor.setStroke()
+        lineColor.setFill()
+//        UIColor.black.setStroke()
+//        UIColor.black.setFill()
+        
+        // Draw path
+        currentContext.addPath(path)
+        currentContext.drawPath(using: .fillStroke)
+        
+        // print(drawRect)
+        
+        return drawRect
+    }
+    
+    
     fileprivate func drawLineSeparator(height: CGFloat, currentOffset: CGPoint) -> CGRect {
         
         let drawRect = CGRect(x: currentOffset.x, y: currentOffset.y, width: pageBounds.width - pageMarginLeft - pageMarginRight, height: height)
@@ -324,6 +447,249 @@ open class SimplePDF {
         
         return drawRect
     }
+    
+    fileprivate func drawFIHTableLine(rowCount: Int, alignment: ContentAlignment, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat?, tableLineWidth: CGFloat, tableDefinition:TableDefinition?, currentOffset: CGPoint) -> CGRect  {
+        
+        let height = (CGFloat(rowCount)*rowHeight)
+        
+        let drawRect = CGRect(x: currentOffset.x, y: currentOffset.y, width: pageBounds.width - pageMarginLeft - pageMarginRight, height: height)
+        
+        UIColor.black.setStroke()
+        UIColor.black.setFill()
+        
+        let tableWidth = { () -> CGFloat in
+            if let cws = tableDefinition?.columnWidths {
+                return cws.reduce(0, { (result, current) -> CGFloat in
+                    return result + current
+                })
+            } else if let cw = columnWidth {
+                return CGFloat(columnCount) * cw
+            }
+            
+            return 0 // default which should never be use, because either columnWidth, or columnsWidths is set
+        }()
+        // 绘制表格横线
+        for i in 0...rowCount {
+            let newOrigin = drawRect.origin.y + rowHeight*CGFloat(i)
+
+            let from = CGPoint(x: drawRect.origin.x, y: newOrigin)
+            let to = CGPoint(x: drawRect.origin.x + tableWidth, y: newOrigin)
+
+            drawLineFromPoint(from, to: to, lineWidth: tableLineWidth)
+        }
+        
+        // 绘制表格竖线
+        for i in 0...columnCount {
+            let currentOffset = { () -> CGFloat in
+                if let cws = tableDefinition?.columnWidths {
+                    var offset:CGFloat = 0
+                    for x in 0..<i {
+                        offset += cws[x]
+                    }
+                    return offset
+                } else if let cw = columnWidth {
+                    return cw * CGFloat(i)
+                }
+                
+                return 0 // default which should never be use, because either columnWidth, or columnsWidths is set
+            }()
+            
+            let newOrigin = drawRect.origin.x + currentOffset
+            
+            let from = CGPoint(x: newOrigin, y: drawRect.origin.y)
+            let to = CGPoint(x: newOrigin, y: drawRect.origin.y + CGFloat(rowCount)*rowHeight)
+            
+            drawLineFromPoint(from, to: to, lineWidth: tableLineWidth)
+        }
+        
+        return drawRect
+    }
+    
+    
+    fileprivate func drawFIHTable(rowCount: Int, alignment: ContentAlignment, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat?, tableLineWidth: CGFloat, font: UIFont?, tableDefinition:TableDefinition?, dataArray: Array<Array<Any>>, currentOffset: CGPoint, columnLine: [Bool]?, rowLine:[Bool]?, imageSize: CGSize?, rowFirstLineShow:Bool) -> CGRect {
+        
+        let height = (CGFloat(rowCount)*rowHeight)
+        
+        let drawRect = CGRect(x: currentOffset.x, y: currentOffset.y, width: pageBounds.width - pageMarginLeft - pageMarginRight, height: height)
+        
+        UIColor.black.setStroke()
+        UIColor.black.setFill()
+        
+        let tableWidth = { () -> CGFloat in
+            if let cws = tableDefinition?.columnWidths {
+                return cws.reduce(0, { (result, current) -> CGFloat in
+                    return result + current
+                })
+            } else if let cw = columnWidth {
+                return CGFloat(columnCount) * cw
+            }
+            
+            return 0 // default which should never be use, because either columnWidth, or columnsWidths is set
+        }()
+        
+        // 绘制表格横线 計算x偏移量
+        var rowSpace = 0.0
+        if rowLine!.count > 0 {
+            for i in 0..<rowLine!.count {
+                if rowLine![i] {
+                    break
+                }
+                else {
+                    let currOffset = { () -> CGFloat in
+                        if let cws = tableDefinition?.columnWidths {
+                            return cws[i]
+                        }
+                        
+                        return 0 // default which should never be use, because either columnWidth, or columnsWidths is set
+                    }()
+                    
+                    rowSpace += currOffset
+                }
+            }
+        }
+        
+        //繪製橫線
+        for i in 0...rowCount {
+            // 第一條線是否繪製
+            if i == 0 && !rowFirstLineShow {
+                continue
+            }
+            
+            //是否要繪製豎線
+            let newOrigin = drawRect.origin.y + rowHeight*CGFloat(i)
+
+            let from = CGPoint(x: drawRect.origin.x + rowSpace, y: newOrigin)
+            let to = CGPoint(x: drawRect.origin.x + tableWidth, y: newOrigin)
+
+            drawLineFromPoint(from, to: to, lineWidth: tableLineWidth)
+        }
+        
+        
+        //繪製表格豎線
+        for i in 0...columnCount {
+            //是否要繪製豎線
+            var columnLineShow = true
+            if columnLine!.count > 0 {
+                columnLineShow = columnLine![i==0 ? i : i-1]
+            }
+            
+            if columnLineShow {
+                let currentOffset = { () -> CGFloat in
+                    if let cws = tableDefinition?.columnWidths {
+                        var offset:CGFloat = 0
+                        for x in 0..<i {
+                            offset += cws[x]
+                        }
+                        return offset
+                    } else if let cw = columnWidth {
+                        return cw * CGFloat(i)
+                    }
+                    
+                    return 0 // default which should never be use, because either columnWidth, or columnsWidths is set
+                }()
+                
+                let newOrigin = drawRect.origin.x + currentOffset
+                
+                let from = CGPoint(x: newOrigin, y: drawRect.origin.y)
+                let to = CGPoint(x: newOrigin, y: drawRect.origin.y + CGFloat(rowCount)*rowHeight)
+                
+                drawLineFromPoint(from, to: to, lineWidth: tableLineWidth)
+            }
+        }
+        
+        for i in 0..<rowCount {
+            for j in 0...columnCount-1 {
+                let currOffset = { () -> CGFloat in
+                    if let cws = tableDefinition?.columnWidths {
+                        var offset:CGFloat = 0
+                        for x in 0..<j {
+                            offset += cws[x]
+                        }
+                        return offset
+                    } else if let cw = columnWidth {
+                        return cw * CGFloat(j)
+                    }
+                    
+                    return 0 // default which should never be use, because either columnWidth, or columnsWidths is set
+                }()
+                
+                let newOriginX = drawRect.origin.x + currOffset
+                let newOriginY = drawRect.origin.y + ((CGFloat(i)*rowHeight))
+                
+                let currentFont = { () -> UIFont in
+                    if let f = tableDefinition?.fonts {
+                        if (f.count > j){
+                            return f[j]
+                        }
+                    } else if let f = font {
+                        return f
+                    }
+                    
+                    return UIFont.systemFont(ofSize: UIFont.systemFontSize)
+                }()
+                
+                let currentTextColor = { () -> UIColor in
+                    if let t = tableDefinition?.textColors {
+                        if t.count > j {
+                            return t[j]
+                        }
+                    }
+                    
+                    return UIColor.black
+                }()
+                
+                let currentColumnWidth = { () -> CGFloat in
+                    if let cw = tableDefinition?.columnWidths {
+                        if cw.count > j {
+                            return cw[j]
+                        }
+                    } else if let cw = columnWidth {
+                        return cw
+                    }
+                    
+                    return 100 // default which should never be use, because either columnWidth, or columnsWidths is set
+                }()
+                
+                let currentAlignment = { () -> ContentAlignment in
+                    if let ca = tableDefinition?.alignments {
+                        if ca.count > j {
+                            return ca[j]
+                        }
+                    }
+                    else {
+                        return .left
+                    }
+                    return .left
+                }()
+                
+                let currentBackColor = {() -> UIColor in
+                    if let bc = tableDefinition?.backColors {
+                        if bc.count > j {
+                            return bc[j]
+                        }
+                    }
+                    else {
+                        return .white
+                    }
+                    return .white
+                }()
+                
+                let frame = CGRect(x: newOriginX, y: newOriginY, width: currentColumnWidth, height: rowHeight)
+                let rect = CGRect(x: newOriginX+tableLineWidth, y: newOriginY+tableLineWidth, width: currentColumnWidth-2*tableLineWidth, height: rowHeight-2*tableLineWidth)
+                
+                drawBackColor(rect, backColor: currentBackColor, lineWidth: currentColumnWidth-2*tableLineWidth)
+                
+                if dataArray[i][j] is String  {
+                    drawTextInCell(frame, text: dataArray[i][j] as! NSString, alignment: currentAlignment, font: currentFont, textColor: currentTextColor)
+                }
+                else if dataArray[i][j] is UIImage {
+                    drawImageInCell(frame, image: dataArray[i][j] as! UIImage, imageSize: imageSize!, alignment: currentAlignment)
+                }
+            }
+        }
+        return drawRect
+    }
+    
     
     fileprivate func drawTable(rowCount: Int, alignment: ContentAlignment, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat?, tableLineWidth: CGFloat, font: UIFont?, tableDefinition:TableDefinition?, dataArray: Array<Array<String>>, currentOffset: CGPoint) -> CGRect {
         
@@ -456,10 +822,16 @@ open class SimplePDF {
                 }()
                 
                 let frame = CGRect(x: newOriginX, y: newOriginY, width: currentColumnWidth, height: rowHeight)
-                let rect = CGRect(x: newOriginX+1, y: newOriginY+1, width: currentColumnWidth-2, height: rowHeight-2)
+                let rect = CGRect(x: newOriginX+tableLineWidth, y: newOriginY+tableLineWidth, width: currentColumnWidth-2*tableLineWidth, height: rowHeight-2*tableLineWidth)
                 
-                drawBackColor(rect, backColor: currentBackColor, lineWidth: currentColumnWidth-2)
-                drawTextInCell(frame, text: dataArray[i][j] as NSString, alignment: currentAlignment, font: currentFont, textColor: currentTextColor)
+                drawBackColor(rect, backColor: currentBackColor, lineWidth: currentColumnWidth-2*tableLineWidth)
+                
+                if j == 1 && rowHeight > 30 {
+                    drawMultilineTextInCell(frame, text: dataArray[i][j] as NSString, font: currentFont, textColor: currentTextColor)
+                }
+                else {
+                    drawTextInCell(frame, text: dataArray[i][j] as NSString, alignment: currentAlignment, font: currentFont, textColor: currentTextColor)
+                }
             }
         }
         
@@ -493,6 +865,43 @@ open class SimplePDF {
         context.fill(rect)
         
         context.strokePath()
+    }
+    
+    //绘制文案
+    fileprivate func drawMultilineTextInCell(_ rect: CGRect, text: NSString, font: UIFont, textColor:UIColor) {
+        
+        let paraStyle = NSMutableParagraphStyle()
+        
+        let skew = 0.0
+        
+        let attributes: [NSAttributedString.Key: Any] = [
+            .foregroundColor: textColor,
+            .paragraphStyle: paraStyle,
+            .obliqueness: skew,
+            .font: font
+        ]
+        
+        let _ = text.size(withAttributes: attributes)
+        
+        text.draw(in: rect, withAttributes: attributes)
+    }
+    
+    
+    fileprivate func drawImageInCell(_ rect: CGRect, image: UIImage, imageSize: CGSize, alignment: ContentAlignment) {
+        
+        let x:CGFloat = { () -> CGFloat in
+            switch alignment {
+            case .left:
+                return (rect.size.width - imageSize.width)/2
+            case .center:
+                return (rect.size.width - imageSize.width)/2
+            case .right:
+                return rect.size.width - imageSize.width
+            }
+        }()
+        let y = (rect.size.height - imageSize.height)/2
+        
+        image.draw(in: CGRect(x: rect.origin.x + x, y: rect.origin.y + y, width: imageSize.width, height: imageSize.height))
     }
     
     //绘制文案
@@ -584,7 +993,16 @@ open class SimplePDF {
                 case .vertical:
                     currentOffset = CGPoint(x: currentOffset.x, y: lastYOffset)
                 }
+            case let .addFIHLineSeparator(size: size, lineColor: lineColor):
                 
+                let drawRect = drawFIHLineSeparator(size: size, currentOffset: currentOffset, lineColor: lineColor)
+                lastYOffset = drawRect.origin.y + drawRect.height
+                switch arrangementDirection {
+                case .horizontal:
+                    currentOffset = CGPoint(x: drawRect.origin.x + drawRect.width, y: currentOffset.y)
+                case .vertical:
+                    currentOffset = CGPoint(x: currentOffset.x, y: lastYOffset)
+                }
             case let .addLineSpace(space):
                 lastYOffset = currentOffset.y + space
                 currentOffset = CGPoint(x: currentOffset.x, y: lastYOffset)
@@ -603,6 +1021,25 @@ open class SimplePDF {
                     currentOffset = CGPoint(x: currentOffset.x, y: lastYOffset)
                 }
                 
+            case let .addFIHTable(rowCount, columnCount, rowHeight, columnWidth, tableLineWidth, font, tableDefinition, dataArray, columnLine, rowLine, imageSize, rowFirstLineShow) :
+                let tableFrame = drawFIHTable(rowCount: rowCount, alignment: alignment, columnCount: columnCount, rowHeight: rowHeight, columnWidth: columnWidth, tableLineWidth: tableLineWidth, font: font, tableDefinition: tableDefinition, dataArray: dataArray, currentOffset: currentOffset, columnLine: columnLine, rowLine: rowLine, imageSize: imageSize, rowFirstLineShow: rowFirstLineShow!)
+                lastYOffset = tableFrame.origin.y + tableFrame.height
+                switch arrangementDirection {
+                case .horizontal:
+                    currentOffset = CGPoint(x: tableFrame.origin.x + tableFrame.width, y: currentOffset.y)
+                case .vertical:
+                    currentOffset = CGPoint(x: currentOffset.x, y: lastYOffset)
+                }
+                
+            case let .addTableLine(rowCount, columnCount, rowHeight, columnWidth, tableLineWidth, tableDefinition):
+                let tableFrame = drawFIHTableLine(rowCount: rowCount, alignment: alignment, columnCount: columnCount, rowHeight: rowHeight, columnWidth: columnWidth, tableLineWidth: tableLineWidth, tableDefinition: tableDefinition, currentOffset: currentOffset)
+                lastYOffset = tableFrame.origin.y + tableFrame.height
+                switch arrangementDirection {
+                case .horizontal:
+                    currentOffset = CGPoint(x: tableFrame.origin.x + tableFrame.width, y: currentOffset.y)
+                case .vertical:
+                    currentOffset = CGPoint(x: currentOffset.x, y: lastYOffset)
+                }
             case let .setContentAlignment(newAlignment):
                 alignment = newAlignment
                 
@@ -626,3 +1063,4 @@ open class SimplePDF {
     }
     
 }
+
