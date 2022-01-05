@@ -215,10 +215,6 @@ class ViewController: UIViewController {
     
     
     @objc func btnDidClick() {
-        let webConfig = WKWebViewConfiguration()
-        let frame = CGRect.init(x: 0, y: 130, width: view.frame.width, height: view.frame.height - 100)
-        webView = WKWebView(frame: frame, configuration: webConfig)
-        view.addSubview(webView)
         
         let userData : [String :Any] = getData()
         
@@ -294,13 +290,18 @@ class ViewController: UIViewController {
         super.viewDidLoad()
         NSLog("123启动了")
         
+        let webConfig = WKWebViewConfiguration()
+        let frame = CGRect.init(x: 0, y: 130, width: view.frame.width, height: view.frame.height - 100)
+        webView = WKWebView(frame: frame, configuration: webConfig)
+        view.addSubview(webView)
+        
         let btn = UIButton.init(type: .custom)
         btn.frame = CGRect.init(x: 30, y: 60, width: 100, height: 44)
         btn.setTitle("獲取數據", for: .normal)
         btn.setTitleColor(.red, for: .normal)
         btn.layer.borderColor = UIColor.red.cgColor
         btn.layer.borderWidth = 1
-        btn.addTarget(self, action: #selector(btnDidClick), for: .touchUpInside)
+        btn.addTarget(self, action: #selector(getBtnDidClick), for: .touchUpInside)
         view.addSubview(btn)
         
         let shareBtn = UIButton.init(type: .custom)
@@ -313,7 +314,44 @@ class ViewController: UIViewController {
         view.addSubview(shareBtn)
     }
     
-    
+    @objc func getBtnDidClick() {
+        let pdf = SimplePDF(pageSize: PDFPageSize.A4)
+        
+        pdf.addText("绘制圆角")
+        pdf.addVerticalSpace(30)
+//        pdf.addFIHCircle(size: CGSize(width: 100, height: 100), backColor: .red, )
+        
+//        pdf.beginHorizontalArrangement()
+        pdf.setContentAlignment(.right)
+        pdf.addHorizontalSpace(PDFPageSize.A4.width - 120 - 30)
+        pdf.addFIHCircle(size: CGSize(width: 120, height: 120), backColor: .gray, lineWidth: 20, startAngle: 0, endAngle: .pi * 2, clockwise: false)
+        pdf.addFIHSpace(-120)
+        pdf.addFIHCircle(size: CGSize(width: 120, height: 120), backColor: .green, lineWidth: 20, startAngle: .pi * 3/2, endAngle: .pi, clockwise: false)
+        pdf.setContentAlignment(.center)
+        pdf.addHorizontalSpace(13)
+        pdf.addVerticalSpace(-95)
+        pdf.addText("90%", font: .systemFont(ofSize: 26, weight: .bold), textColor: .green)
+        pdf.addText("達成率", font: .systemFont(ofSize: 16, weight: .regular), textColor: .gray)
+        
+        if let documentDirectories = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true).first {
+            
+            shareTitle = "绘制圆角"
+            
+            documentsFileName = documentDirectories + "/" + shareTitle + ".pdf"
+            
+            let pdfData = pdf.generatePDFdata()
+            do{
+                try pdfData.write(to: URL(fileURLWithPath: documentsFileName), options: .atomic)
+                print("\nThe generated pdf can be found at:")
+                print("\n\t\(String(describing: documentsFileName))\n")
+                
+                
+                webView.load(pdfData, mimeType: "application/pdf", characterEncodingName: "GBK", baseURL:NSURL.init(fileURLWithPath: "") as URL)
+            }catch{
+                print(error)
+            }
+        }
+    }
     
     
     func getData() -> Dictionary<String, Any> {

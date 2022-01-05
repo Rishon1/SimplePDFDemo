@@ -1,6 +1,6 @@
 //
 //  SimplePDF.swift
-//  SimplePDF
+//  BHS
 //
 //  Created by FIH on 2021/12/23.
 //  Copyright © 2021 FIH. All rights reserved.
@@ -21,6 +21,9 @@ private enum SimplePDFCommand {
     case addTable(rowCount: Int, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat?, tableLineWidth: CGFloat, font: UIFont?, tableDefinition:TableDefinition?, dataArray: Array<Array<String>>)
     
     case addFIHTable(rowCount: Int, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat?, tableLineWidth: CGFloat, font: UIFont?, tableDefinition:TableDefinition?, dataArray: Array<Array<Any>>, columnLine: [Bool]?, rowLine:[Bool]?, imageSize: CGSize?, rowFirstLineShow:Bool?)
+    
+    case addFIHCircle(size: CGSize, backColor:UIColor, lineWidth:CGFloat, startAngle:CGFloat, endAngle:CGFloat, clockwise:Bool)
+    case addFIHSpace(CGFloat)
     
     case addTableLine(rowCount: Int, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat?, tableLineWidth: CGFloat, tableDefinition:TableDefinition?)
     
@@ -238,6 +241,25 @@ open class SimplePDF {
     }
     
     
+    ///  绘制圆环进度条
+    /// - Parameters:
+    ///   - size: 尺寸
+    ///   - backColor: 背景色
+    ///   - lineWidth: 线宽
+    ///   - startAngle: 开始点
+    ///   - endAngle: 结束点
+    ///   - clockwise: 是否逆时针
+    open func addFIHCircle(size: CGSize, backColor:UIColor, lineWidth:CGFloat, startAngle:CGFloat = .pi * 3/2, endAngle: CGFloat, clockwise: Bool) {
+        commands += [ .addFIHCircle(size: size, backColor: backColor, lineWidth: lineWidth, startAngle: startAngle, endAngle: endAngle, clockwise: clockwise)]
+    }
+    
+    
+    /// 设置偏移量
+    /// - Parameter space: 偏移量
+    open func addFIHSpace(_ space: CGFloat) {
+        commands += [ .addFIHSpace(space) ]
+    }
+    
     open func addTableLine(rowCount: Int, columnCount: Int, rowHeight: CGFloat, columnWidth: CGFloat, tableLineWidth: CGFloat) {
         commands += [ .addTableLine(rowCount: rowCount, columnCount: columnCount, rowHeight: rowHeight, columnWidth: columnWidth, tableLineWidth: tableLineWidth, tableDefinition: nil)]
     }
@@ -262,6 +284,8 @@ open class SimplePDF {
         commands += [ .endHorizontalArrangement ]
     }
     
+    
+    // MARK: 内部绘制方法
     /// - returns: drawing text rect
     fileprivate func drawText(_ text: String, font: UIFont, textColor: UIColor, alignment: ContentAlignment, currentOffset: CGPoint) -> CGRect {
         
@@ -852,6 +876,38 @@ open class SimplePDF {
         context.strokePath()
     }
     
+    /// 画圆环
+    /// - Parameters:
+    ///   - rect: 位置信息
+    ///   - backColor: 背景色
+    ///   - lineWidth: 线宽
+    ///   - startAngle: 开始点  默认是  pi * 3/2   (12点方向)
+    ///   - endAngle: 结束点
+    ///   - clockwise: 是否是逆时针  默认 顺时针
+    fileprivate func drawCircle(_ rect: CGRect, backColor:UIColor, lineWidth:CGFloat, startAngle:CGFloat, endAngle:CGFloat, clockwise:Bool) {
+        // 获取当前context
+        let ctx = UIGraphicsGetCurrentContext()!
+        // 设置线的宽度
+        ctx.setLineWidth(lineWidth)
+        
+//        ctx.setLineCap(.butt)
+        // 设置画笔颜色
+        let color = backColor.cgColor
+        ctx.setStrokeColor(color)
+        
+        let originX = rect.size.width / 2
+        let originY = rect.size.height / 2
+        
+        // 计算半径
+        let radius = (originX > originY ? originY : originX) - 10.0
+            
+        // 逆时针画一个圆弧
+        // 画一个圆弧作为context的路径，(x, y)是圆弧的圆心；radius是圆弧的半径；`startAngle' 是开始点的弧度;`endAngle' 是结束位置的弧度;（此处开始位置为屏幕坐标轴x轴正轴方向）; clockwise 为1是，圆弧是逆时针，0的时候就是顺时针。startAngle跟endAngle都是弧度制
+        ctx.addArc(center: CGPoint(x: rect.origin.x + radius, y: rect.origin.y + radius), radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: clockwise)
+        
+        ctx.strokePath()
+    }
+    
     // 绘制背景色
     fileprivate func drawBackColor(_ rect: CGRect, backColor:UIColor, lineWidth: CGFloat) {
         //获取绘图上下文
@@ -1031,6 +1087,24 @@ open class SimplePDF {
                     currentOffset = CGPoint(x: currentOffset.x, y: lastYOffset)
                 }
                 
+            case let .addFIHCircle(size, backColor, lineWidth, startAngle, endAngle, clockwise) :
+                drawCircle(CGRect(origin: currentOffset, size: size), backColor: backColor, lineWidth: lineWidth, startAngle: startAngle, endAngle: endAngle, clockwise: clockwise)
+                switch arrangementDirection {
+                case .horizontal:
+                    currentOffset = CGPoint(x: currentOffset.x + size.width, y: currentOffset.y)
+                case .vertical:
+                    lastYOffset = currentOffset.y + size.height
+                    currentOffset = CGPoint(x: currentOffset.x, y: lastYOffset)
+                }
+            case let .addFIHSpace(space) :
+                switch arrangementDirection {
+                case .horizontal:
+                    lastYOffset = currentOffset.y
+                    currentOffset = CGPoint(x: currentOffset.x + space, y: currentOffset.y)
+                case .vertical:
+                    lastYOffset = currentOffset.y + space
+                    currentOffset = CGPoint(x: currentOffset.x, y: lastYOffset)
+                }
             case let .addTableLine(rowCount, columnCount, rowHeight, columnWidth, tableLineWidth, tableDefinition):
                 let tableFrame = drawFIHTableLine(rowCount: rowCount, alignment: alignment, columnCount: columnCount, rowHeight: rowHeight, columnWidth: columnWidth, tableLineWidth: tableLineWidth, tableDefinition: tableDefinition, currentOffset: currentOffset)
                 lastYOffset = tableFrame.origin.y + tableFrame.height
