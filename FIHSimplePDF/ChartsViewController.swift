@@ -37,6 +37,9 @@ extension ChartsViewController: UITableViewDelegate, UITableViewDataSource {
         if indexPath.row == 0 {
             cell.textLabel?.text = "Line Chart"
         }
+        else if indexPath.row == 1 {
+            cell.textLabel?.text = "Simple Line Chart"
+        }
         else {
             cell.textLabel?.text = "Pie Chart"
         }
@@ -49,6 +52,9 @@ extension ChartsViewController: UITableViewDelegate, UITableViewDataSource {
             self.navigationController?.pushViewController(LineChartsViewController(), animated: true)
         }
         else if indexPath.row == 1 {
+            self.navigationController?.pushViewController(SimpleLineChartsViewController(), animated: true)
+        }
+        else if indexPath.row == 2 {
             self.navigationController?.pushViewController(PieChartsViewController(), animated: true)
         }
         
