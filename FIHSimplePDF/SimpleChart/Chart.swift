@@ -81,8 +81,6 @@ open class Chart: UIControl {
     As default, it will display the values of the series which has the most data.
     */
     open var xLabels: [Double]?
-    
-    open var xLabelsData: [String]?
 
     /**
     Formatter for the labels on the x-axis. `index` represents the `xLabels` index, `value` its value.
@@ -125,6 +123,18 @@ open class Chart: UIControl {
     open var yLabelsOnRightSide: Bool = false
     
     fileprivate var yLabelMaxWidth = 0.0
+    /// y 轴 文字是否与 竖线对齐
+    fileprivate var yLabelShowMiddle = false
+    /// x 轴 文字是否与 竖线对齐
+    fileprivate var xLabelShowMiddle = false
+    /// x 轴竖线 底部偏移量
+    fileprivate var xLineEndSpace = 0.0
+    
+    /// y 轴横线 左边偏移量
+    fileprivate var yLineStartSpace = false
+    
+    /// 表格线条是否实线，默认 false ,  showYGridLine 为ture 时，虚线，设置此属性 可以改变为实线
+    fileprivate var showSolidLine = false
 
     /**
     Font used for the labels.
@@ -487,10 +497,43 @@ open class Chart: UIControl {
         return self
     }
     
+    @discardableResult
     public func setPointViewSize(_ prop: CGSize) -> Chart {
         pointSize = prop
         return self
     }
+    
+    @discardableResult
+    public func yLabelShowMiddle(_ prop: Bool) -> Chart {
+        yLabelShowMiddle = prop
+        return self
+    }
+    
+    @discardableResult
+    public func xLabelShowMiddle(_ prop: Bool) -> Chart {
+        xLabelShowMiddle = prop
+        return self
+    }
+    
+    @discardableResult
+    public func xLineEndSpace(_ prop: Double) -> Chart {
+        xLineEndSpace = prop
+        return self
+    }
+    
+    @discardableResult
+    public func yLineStartSpace(_ prop: Bool) -> Chart {
+        yLineStartSpace = prop
+        return self
+    }
+    
+    
+    @discardableResult
+    public func showSolidLine(_ prop: Bool) -> Chart {
+        showSolidLine = prop
+        return self
+    }
+    
 
     // MARK: - Scaling
 
@@ -778,14 +821,14 @@ open class Chart: UIControl {
 
             // Add vertical grid for each label, except axes on the left and right
 
-            var originX = self.yLabelMaxWidth + x + padding
+            var originX = self.yLabelMaxWidth + x + (xLabelShowMiddle ? padding : 0.0)
             
             if x != 0 {
                 originX = self.yLabelMaxWidth + x
                 
             }
             context.move(to: CGPoint(x: originX, y: CGFloat(0)))
-            context.addLine(to: CGPoint(x:originX, y: bounds.height - 20))
+            context.addLine(to: CGPoint(x:originX, y: bounds.height - xLineEndSpace))
             context.strokePath()
             
             if xLabelsSkipLast && isLastLabel {
@@ -807,9 +850,11 @@ open class Chart: UIControl {
                 // Add left padding
                 label.frame.origin.y -= (label.frame.height - bottomInset) / 2
     
-                label.frame.origin.x -= label.frame.size.width/2.0
-                
-                label.frame.origin.x += (i == 0 ? padding : 0.0)
+                if xLabelShowMiddle {
+                    label.frame.origin.x -= label.frame.size.width/2.0
+                    
+                    label.frame.origin.x += (i == 0 ? padding : 0.0)
+                }
                 
                 // Set label's text alignment
                 //label.frame.size.width = (drawingWidth / CGFloat(labels.count)) - padding * 2
@@ -871,9 +916,9 @@ open class Chart: UIControl {
             // Add horizontal grid for each label, but not over axes
             if y != drawingHeight + topInset && y != zero && showYGridLine{
 
-                context.move(to: CGPoint(x: CGFloat(0), y: y))
+                context.move(to: CGPoint(x: CGFloat(0) + (yLineStartSpace ? maxWidth + (xLabelShowMiddle ? padding : 0.0) : 0.0), y: y))
                 context.addLine(to: CGPoint(x: self.bounds.width, y: y))
-                if labels[i] != 0 {
+                if labels[i] != 0 && !showSolidLine {
                     // Horizontal grid for 0 is not dashed
                     context.setLineDash(phase: CGFloat(0), lengths: [CGFloat(5)])
                 } else {
@@ -905,7 +950,7 @@ open class Chart: UIControl {
             }
 
             // Labels should be placed above the horizontal grid
-            label.frame.origin.y -= label.frame.height
+            label.frame.origin.y -= (yLabelShowMiddle ? label.frame.height / 2.0 : label.frame.height)
 
             self.addSubview(label)
         }
