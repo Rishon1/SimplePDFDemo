@@ -291,12 +291,12 @@ class ViewController: UIViewController {
         NSLog("123启动了")
         
         let webConfig = WKWebViewConfiguration()
-        let frame = CGRect.init(x: 0, y: 130, width: view.frame.width, height: view.frame.height - 100)
+        let frame = CGRect.init(x: 0, y: 150, width: view.frame.width, height: view.frame.height - 120)
         webView = WKWebView(frame: frame, configuration: webConfig)
         view.addSubview(webView)
         
         let btn = UIButton.init(type: .custom)
-        btn.frame = CGRect.init(x: 30, y: 60, width: 100, height: 44)
+        btn.frame = CGRect.init(x: 30, y: 80, width: 100, height: 44)
         btn.setTitle("獲取數據", for: .normal)
         btn.setTitleColor(.red, for: .normal)
         btn.layer.borderColor = UIColor.red.cgColor
@@ -305,7 +305,7 @@ class ViewController: UIViewController {
         view.addSubview(btn)
         
         let shareBtn = UIButton.init(type: .custom)
-        shareBtn.frame = CGRect.init(x: 200, y: 60, width: 100, height: 44)
+        shareBtn.frame = CGRect.init(x: 200, y: 80, width: 100, height: 44)
         shareBtn.setTitle("分享文件", for: .normal)
         shareBtn.setTitleColor(.black, for: .normal)
         shareBtn.layer.borderColor = UIColor.black.cgColor
@@ -315,13 +315,19 @@ class ViewController: UIViewController {
     }
     
     @objc func getBtnDidClick() {
+        //pdfDemo()
+        self.navigationController?.pushViewController(ChartsViewController(), animated: true)
+        
+    }
+    
+    fileprivate func pdfDemo() {
         let pdf = SimplePDF(pageSize: PDFPageSize.A4)
         
         pdf.addText("绘制圆角")
         pdf.addVerticalSpace(30)
-//        pdf.addFIHCircle(size: CGSize(width: 100, height: 100), backColor: .red, )
+        //        pdf.addFIHCircle(size: CGSize(width: 100, height: 100), backColor: .red, )
         
-//        pdf.beginHorizontalArrangement()
+        //        pdf.beginHorizontalArrangement()
         pdf.setContentAlignment(.right)
         pdf.addHorizontalSpace(PDFPageSize.A4.width - 120 - 30)
         pdf.addFIHCircle(size: CGSize(width: 120, height: 120), backColor: .gray, lineWidth: 20, startAngle: 0, endAngle: .pi * 2, clockwise: false)

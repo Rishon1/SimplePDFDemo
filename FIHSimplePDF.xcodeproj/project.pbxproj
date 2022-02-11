@@ -8,6 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		0E61AF592715307484B02A09 /* Pods_FIHSimplePDF.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EAF44EDB64D97A1FB2B18135 /* Pods_FIHSimplePDF.framework */; };
+		1825352427B3A25C0013A139 /* ChartsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1825352327B3A25C0013A139 /* ChartsViewController.swift */; };
+		1825352627B3A4D10013A139 /* LineChartsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1825352527B3A4D10013A139 /* LineChartsViewController.swift */; };
+		1825352827B3B0B80013A139 /* BHSChartsUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1825352727B3B0B80013A139 /* BHSChartsUtils.swift */; };
+		1825352A27B4A0DB0013A139 /* PieChartsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1825352927B4A0DB0013A139 /* PieChartsViewController.swift */; };
 		1867EFA127704E20006B67BB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1867EFA027704E20006B67BB /* AppDelegate.swift */; };
 		1867EFA327704E20006B67BB /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1867EFA227704E20006B67BB /* SceneDelegate.swift */; };
 		1867EFA827704E20006B67BB /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1867EFA627704E20006B67BB /* Main.storyboard */; };
@@ -20,6 +24,10 @@
 
 /* Begin PBXFileReference section */
 		02355E8857F627B84BACBA98 /* Pods-FIHSimplePDF.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-FIHSimplePDF.release.xcconfig"; path = "Target Support Files/Pods-FIHSimplePDF/Pods-FIHSimplePDF.release.xcconfig"; sourceTree = "<group>"; };
+		1825352327B3A25C0013A139 /* ChartsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartsViewController.swift; sourceTree = "<group>"; };
+		1825352527B3A4D10013A139 /* LineChartsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LineChartsViewController.swift; sourceTree = "<group>"; };
+		1825352727B3B0B80013A139 /* BHSChartsUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BHSChartsUtils.swift; sourceTree = "<group>"; };
+		1825352927B4A0DB0013A139 /* PieChartsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PieChartsViewController.swift; sourceTree = "<group>"; };
 		1867EF9D27704E20006B67BB /* FIHSimplePDF.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FIHSimplePDF.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1867EFA027704E20006B67BB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1867EFA227704E20006B67BB /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -76,6 +84,10 @@
 				1867EFAB27704E21006B67BB /* LaunchScreen.storyboard */,
 				1867EFD0277084FD006B67BB /* test.png */,
 				1867EFAE27704E21006B67BB /* Info.plist */,
+				1825352327B3A25C0013A139 /* ChartsViewController.swift */,
+				1825352527B3A4D10013A139 /* LineChartsViewController.swift */,
+				1825352727B3B0B80013A139 /* BHSChartsUtils.swift */,
+				1825352927B4A0DB0013A139 /* PieChartsViewController.swift */,
 			);
 			path = FIHSimplePDF;
 			sourceTree = "<group>";
@@ -175,11 +187,15 @@
 			);
 			inputPaths = (
 				"${PODS_ROOT}/Target Support Files/Pods-FIHSimplePDF/Pods-FIHSimplePDF-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/Charts/Charts.framework",
 				"${BUILT_PRODUCTS_DIR}/SimplePDF/SimplePDF.framework",
+				"${BUILT_PRODUCTS_DIR}/SwiftCharts/SwiftCharts.framework",
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Charts.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SimplePDF.framework",
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SwiftCharts.framework",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
@@ -215,7 +231,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1825352827B3B0B80013A139 /* BHSChartsUtils.swift in Sources */,
+				1825352627B3A4D10013A139 /* LineChartsViewController.swift in Sources */,
 				1867EFD52771CDD2006B67BB /* ViewController.swift in Sources */,
+				1825352427B3A25C0013A139 /* ChartsViewController.swift in Sources */,
+				1825352A27B4A0DB0013A139 /* PieChartsViewController.swift in Sources */,
 				1867EFA127704E20006B67BB /* AppDelegate.swift in Sources */,
 				1867EFA327704E20006B67BB /* SceneDelegate.swift in Sources */,
 			);

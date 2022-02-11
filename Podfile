@@ -11,5 +11,5 @@ target 'FIHSimplePDF' do
   # Pods for FIHSimplePDF
 
   pod 'SimplePDF', :path => $POD_SPEC_PATH + 'SimplePDF/3.0.1'
-
+  pod 'Charts'
 end
