@@ -29,7 +29,7 @@ open class ChartSeries {
     /**
     The series color.
     */
-    open var color: UIColor = ChartColors.blueColor() {
+    open var color: UIColor = .blue {
         didSet {
             colors = (above: color, below: color, 0)
         }
@@ -42,7 +42,7 @@ open class ChartSeries {
         above: UIColor,
         below: UIColor,
         zeroLevel: Double
-    ) = (above: ChartColors.blueColor(), below: ChartColors.redColor(), 0)
+    ) = (above: .blue, below: .red, 0)
 
     public init(_ data: [Double]) {
         self.data = []
