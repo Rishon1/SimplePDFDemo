@@ -275,6 +275,11 @@ open class Chart: UIControl {
      */
     open var xZeroLinePoint = true
     
+    /**
+     y 为 0时 是否显示 横线，默认显示
+     */
+    open var yZeroLineShow = true
+    
     // MARK: Private variables
     fileprivate var pointViewArr: [ChartPointView] = []
 
@@ -563,6 +568,12 @@ open class Chart: UIControl {
         return self
     }
     
+    @discardableResult
+    public func yZeroLineShow(_ prop: Bool) -> Chart {
+        yZeroLineShow = prop
+        return self
+    }
+    
     // MARK: - Scaling
 
     fileprivate func getMinMax() -> (min: ChartPoint, max: ChartPoint) {
@@ -810,7 +821,7 @@ open class Chart: UIControl {
         
 
         // horizontal axis when y = 0
-        if min.y < 0 && max.y > 0 {
+        if min.y < 0 && max.y > 0 && yZeroLineShow {
             let y = CGFloat(getZeroValueOnYAxis(zeroLevel: 0))
             context.move(to: CGPoint(x: CGFloat(0), y: y))
             context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: y))
