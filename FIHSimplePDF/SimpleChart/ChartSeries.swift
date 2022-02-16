@@ -1,15 +1,24 @@
 //
 //  ChartSeries.swift
+//  
 //
-//  Created by Giampaolo Bellavite on 07/11/14.
-//  Copyright (c) 2014 Giampaolo Bellavite. All rights reserved.
+//  Created by bo.rong on 2022/2/14.
+//  Copyright © 2022 FIH. All rights reserved.
 //
-
+    
 import UIKit
 
 /**
 The `ChartSeries` class create a chart series and configure its appearance and behavior.
 */
+/**
+Set the a x-label orientation.
+*/
+public enum ChartSeriesPointType {
+    case circle
+    case square
+}
+
 open class ChartSeries {
     /**
     The data used for the chart series.
@@ -25,6 +34,8 @@ open class ChartSeries {
     Draws an area below the series line.
     */
     open var area: Bool = false
+    
+    open var pointType: ChartSeriesPointType = .circle
 
     /**
     The series color.

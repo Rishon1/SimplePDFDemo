@@ -1,19 +1,21 @@
 //
 //  Chart.swift
 //
-//  Created by Giampaolo Bellavite on 07/11/14.
-//  Copyright (c) 2014 Giampaolo Bellavite. All rights reserved.
 //
+//  Created by bo.rong on 2022/2/14.
+//  Copyright © 2022 FIH. All rights reserved.
+//
+    
 
 import UIKit
 
-public protocol ChartDelegate: class {
+public protocol ChartDelegate: NSObjectProtocol {
 
     /**
     Tells the delegate that the specified chart has been touched.
 
     - parameter chart: The chart that has been touched.
-    - parameter indexes: Each element of this array contains the index of the data that has been touched, one for each 
+    - parameter indexes: Each element of this array contains the index of the data that has been touched, one for each
       series. If the series hasn't been touched, its index will be nil.
     - parameter x: The value on the x-axis that has been touched.
     - parameter left: The distance from the left side of the chart.
@@ -22,7 +24,7 @@ public protocol ChartDelegate: class {
     func didTouchChart(_ chart: Chart, indexes: [Int?], x: Double, left: CGFloat)
 
     /**
-    Tells the delegate that the user finished touching the chart. The user will 
+    Tells the delegate that the user finished touching the chart. The user will
     "finish" touching the chart only swiping left/right outside the chart.
 
     - parameter chart: The chart that has been touched.
@@ -30,8 +32,8 @@ public protocol ChartDelegate: class {
     */
     func didFinishTouchingChart(_ chart: Chart)
     /**
-     Tells the delegate that the user ended touching the chart. The user 
-     will "end" touching the chart whenever the touchesDidEnd method is 
+     Tells the delegate that the user ended touching the chart. The user
+     will "end" touching the chart whenever the touchesDidEnd method is
      being called.
      
      - parameter chart: The chart that has been touched.
@@ -41,7 +43,7 @@ public protocol ChartDelegate: class {
     
     
     /// 数据点位点击回传
-    func pointViwDidClick(_ data: (x: Double, y: Double))
+    func pointViwDidClick(_ data: (x: Double, y: Double), xLabelsData:[String], seriesIndex: Int)
 }
 
 /**
@@ -77,15 +79,19 @@ open class Chart: UIControl {
     }
 
     /**
-    The values to display as labels on the x-axis. You can format these values  with the `xLabelFormatter` attribute. 
+    The values to display as labels on the x-axis. You can format these values  with the `xLabelFormatter` attribute.
     As default, it will display the values of the series which has the most data.
     */
     open var xLabels: [Double]?
+    
+    open var xLabelsData: [String]?
 
     /**
     Formatter for the labels on the x-axis. `index` represents the `xLabels` index, `value` its value.
     */
     open var xLabelsFormatter = { (labelIndex: Int, labelValue: Double) -> String in
+        
+        //String(xLabelsData?[labelIndex] ?? "")
         String(Int(labelValue))
     }
 
@@ -259,6 +265,16 @@ open class Chart: UIControl {
      */
     open var pointSize: CGSize = CGSize(width: 12.0, height: 12.0)
 
+    /**
+     x轴label是否旋转展示
+     */
+    open var xLabelsTranform = false
+    
+    /**
+     x轴是否添加点位, 默认添加
+     */
+    open var xZeroLinePoint = true
+    
     // MARK: Private variables
     fileprivate var pointViewArr: [ChartPointView] = []
 
@@ -380,20 +396,25 @@ open class Chart: UIControl {
         }
         layerStore.removeAll()
         pointViewArr.removeAll()
-
+        
+        //先绘制 Y轴
+        if showYLabelsAndGrid && (yLabels != nil || series.count > 0) {
+            drawLabelsAndGridOnYAxis()
+        }
+        
         // Draw content
 
         for (index, series) in self.series.enumerated() {
 
             // Separate each line in multiple segments over and below the x axis
-            let segments = Chart.segmentLine(series.data as ChartLineSegment, zeroLevel: series.colors.zeroLevel)
+            let segments = Chart.segmentLine(series.data as ChartLineSegment, zeroLevel: series.colors.zeroLevel, xZeroLinePoint: xZeroLinePoint)
 
             segments.forEach({ segment in
                 let scaledXValues = scaleValuesOnXAxis( segment.map { $0.x } )
                 let scaledYValues = scaleValuesOnYAxis( segment.map { $0.y } )
 
                 if series.line {
-                    drawLine(scaledXValues, yValues: scaledYValues, seriesIndex: index)
+                    drawLine(scaledXValues, yValues: scaledYValues, seriesIndex: index, pointType: series.pointType)
                 }
                 if series.area {
                     drawArea(scaledXValues, yValues: scaledYValues, seriesIndex: index)
@@ -402,10 +423,6 @@ open class Chart: UIControl {
         }
 
         drawAxes()
-        //先绘制 Y轴
-        if showYLabelsAndGrid && (yLabels != nil || series.count > 0) {
-            drawLabelsAndGridOnYAxis()
-        }
         
         if showXLabelsAndGrid && (xLabels != nil || series.count > 0) {
             drawLabelsAndGridOnXAxis()
@@ -534,7 +551,18 @@ open class Chart: UIControl {
         return self
     }
     
+    @discardableResult
+    public func xLabelsTranform(_ prop: Bool) -> Chart {
+        xLabelsTranform = prop
+        return self
+    }
 
+    @discardableResult
+    public func xZeroLinePoint(_ prop: Bool) -> Chart {
+        xZeroLinePoint = prop
+        return self
+    }
+    
     // MARK: - Scaling
 
     fileprivate func getMinMax() -> (min: ChartPoint, max: ChartPoint) {
@@ -657,7 +685,7 @@ open class Chart: UIControl {
             pointView.isScaleBig = true
             
             
-            delegate?.pointViwDidClick(series[pointView.seriesIndex!].data[pointView.tag])
+            delegate?.pointViwDidClick(series[pointView.seriesIndex!].data[pointView.tag], xLabelsData: xLabelsData ?? [""], seriesIndex: pointView.seriesIndex!)
             
         }
     }
@@ -670,9 +698,13 @@ open class Chart: UIControl {
     ///   - seriesIndex: 数据index
     ///   - backColor: 背景se
     /// - Returns: 点
-    fileprivate func addPointView(_ frame: CGRect, tag: Int, seriesIndex: Int, backColor: UIColor) -> ChartPointView {
+    fileprivate func addPointView(_ frame: CGRect, tag: Int, seriesIndex: Int, backColor: UIColor, pointType: ChartSeriesPointType) -> ChartPointView {
         let pointView = ChartPointView(frame: frame)
-        pointView.layer.cornerRadius = frame.size.width / 2.0
+        
+        if pointType == .circle {
+            pointView.layer.cornerRadius = frame.size.width / 2.0
+        }
+        
         let tap = UITapGestureRecognizer(target:self, action:#selector(tapClick(tap:)))
         pointView.isUserInteractionEnabled=true
         pointView.tag = tag
@@ -684,15 +716,16 @@ open class Chart: UIControl {
     }
     
     
-    fileprivate func drawLine(_ xValues: [Double], yValues: [Double], seriesIndex: Int) {
+    fileprivate func drawLine(_ xValues: [Double], yValues: [Double], seriesIndex: Int, pointType: ChartSeriesPointType) {
         // YValues are "reverted" from top to bottom, so 'above' means <= level
         let isAboveZeroLine = yValues.max()! <= self.scaleValueOnYAxis(series[seriesIndex].colors.zeroLevel)
         let path = CGMutablePath()
+        
         path.move(to: CGPoint(x: CGFloat(xValues.first!) + self.yLabelMaxWidth, y: CGFloat(yValues.first!)))
         
         let space = pointSize.width / 2.0
         if showPointView {
-            let pointView = addPointView(CGRect(origin: CGPoint(x: CGFloat(xValues.first!)-space + self.yLabelMaxWidth, y: CGFloat(yValues.first!)-space), size: pointSize), tag: 0, seriesIndex: seriesIndex, backColor: series[seriesIndex].colors.above)
+            let pointView = addPointView(CGRect(origin: CGPoint(x: CGFloat(xValues.first!)-space + self.yLabelMaxWidth, y: CGFloat(yValues.first!)-space), size: pointSize), tag: 0, seriesIndex: seriesIndex, backColor: series[seriesIndex].colors.above, pointType: pointType)
             self.addSubview(pointView)
             
             self.pointViewArr.append(pointView)
@@ -704,7 +737,7 @@ open class Chart: UIControl {
             path.addLine(to: CGPoint(x: CGFloat(xValues[i]) + self.yLabelMaxWidth, y: CGFloat(y)))
             
             if showPointView {
-                let pointView = addPointView(CGRect(origin: CGPoint(x: CGFloat(xValues[i])-space + self.yLabelMaxWidth, y: CGFloat(y)-space), size: pointSize), tag: i, seriesIndex: seriesIndex, backColor: series[seriesIndex].colors.above)
+                let pointView = addPointView(CGRect(origin: CGPoint(x: CGFloat(xValues[i])-space + self.yLabelMaxWidth, y: CGFloat(y)-space), size: pointSize), tag: i, seriesIndex: seriesIndex, backColor: series[seriesIndex].colors.above, pointType: pointType)
                 self.addSubview(pointView)
                 self.pointViewArr.append(pointView)
             }
@@ -795,7 +828,7 @@ open class Chart: UIControl {
         if !hideRightLine {
             context.move(to: CGPoint(x: CGFloat(drawingWidth), y: CGFloat(0)))
             context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: drawingHeight + topInset))
-            context.strokePath()            
+            context.strokePath()
         }
     }
 
@@ -821,12 +854,7 @@ open class Chart: UIControl {
 
             // Add vertical grid for each label, except axes on the left and right
 
-            var originX = self.yLabelMaxWidth + x + (xLabelShowMiddle ? padding : 0.0)
-            
-            if x != 0 {
-                originX = self.yLabelMaxWidth + x
-                
-            }
+            let originX = self.yLabelMaxWidth + x
             context.move(to: CGPoint(x: originX, y: CGFloat(0)))
             context.addLine(to: CGPoint(x:originX, y: bounds.height - xLineEndSpace))
             context.strokePath()
@@ -837,7 +865,7 @@ open class Chart: UIControl {
             }
 
             // Add label
-            let label = UILabel(frame: CGRect(x: self.yLabelMaxWidth + x, y: drawingHeight, width: 0, height: 0))
+            let label = UILabel(frame: CGRect(x: self.yLabelMaxWidth + x - (i == 0 ? padding : 0.0), y: drawingHeight, width: 0, height: 0))
             label.font = labelFont
             label.text = xLabelsFormatter(i, labels[i])
             label.textColor = labelColor
@@ -875,6 +903,11 @@ open class Chart: UIControl {
                     label.frame.origin.x += padding
                 }
             }
+            
+            if xLabelsTranform {
+                label.transform = CGAffineTransform(rotationAngle: CGFloat(-Double.pi / 4))
+            }
+            
             self.addSubview(label)
         }
     }
@@ -903,7 +936,7 @@ open class Chart: UIControl {
             }
         }
         
-        self.yLabelMaxWidth = maxWidth
+        self.yLabelMaxWidth = maxWidth + (xLabelShowMiddle ? 5.0 : 0.0)
         
         let scaled = scaleValuesOnYAxis(labels)
         let padding: CGFloat = 5
@@ -1042,7 +1075,14 @@ open class Chart: UIControl {
             delegate?.didEndTouchingChart(self)
         }
         
-        
+        self.pointViewArr.forEach { pv in
+            if pv.isScaleBig {
+                var transform = pv.transform
+                transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+                pv.transform = transform
+                pv.isScaleBig = false
+            }
+        }
     }
 
     override open func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -1100,7 +1140,7 @@ open class Chart: UIControl {
     Segment a line in multiple lines when the line touches the x-axis, i.e. separating
     positive from negative values.
     */
-    fileprivate class func segmentLine(_ line: ChartLineSegment, zeroLevel: Double) -> [ChartLineSegment] {
+    fileprivate class func segmentLine(_ line: ChartLineSegment, zeroLevel: Double, xZeroLinePoint: Bool) -> [ChartLineSegment] {
         var segments: [ChartLineSegment] = []
         var segment: ChartLineSegment = []
 
@@ -1108,7 +1148,7 @@ open class Chart: UIControl {
             segment.append(point)
             if i < line.count - 1 {
                 let nextPoint = line[i+1]
-                if point.y >= zeroLevel && nextPoint.y < zeroLevel || point.y < zeroLevel && nextPoint.y >= zeroLevel {
+                if xZeroLinePoint && (point.y >= zeroLevel && nextPoint.y < zeroLevel || point.y < zeroLevel && nextPoint.y >= zeroLevel) {
                     // The segment intersects zeroLevel, close the segment with the intersection point
                     let closingPoint = Chart.intersectionWithLevel(point, and: nextPoint, level: zeroLevel)
                     segment.append(closingPoint)

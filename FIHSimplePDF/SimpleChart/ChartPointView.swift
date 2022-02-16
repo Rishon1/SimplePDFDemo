@@ -1,10 +1,11 @@
 //
 //  ChartPointView.swift
-//  FIHSimplePDF
+//  
 //
-//  Created by FIH on 2022/2/11.
+//  Created by bo.rong on 2022/2/14.
+//  Copyright © 2022 FIH. All rights reserved.
 //
-
+    
 import UIKit
 
 class ChartPointView: UIView {
