@@ -28,7 +28,7 @@ class ChartsViewController: UIViewController {
 extension ChartsViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 3
+        return 4
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -40,8 +40,11 @@ extension ChartsViewController: UITableViewDelegate, UITableViewDataSource {
         else if indexPath.row == 1 {
             cell.textLabel?.text = "Simple Line Chart"
         }
-        else {
+        else if indexPath.row == 2 {
             cell.textLabel?.text = "Pie Chart"
+        }
+        else {
+            cell.textLabel?.text = "Column Chart"
         }
         return cell
     }
@@ -56,6 +59,9 @@ extension ChartsViewController: UITableViewDelegate, UITableViewDataSource {
         }
         else if indexPath.row == 2 {
             self.navigationController?.pushViewController(PieChartsViewController(), animated: true)
+        }
+        else {
+            self.navigationController?.pushViewController(ColumnViewController(), animated: true)
         }
         
         

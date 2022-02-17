@@ -13,5 +13,7 @@ class ChartPointView: UIView {
     open var seriesIndex: Int?
     
     open var isScaleBig = false
+    
+    open var chartType: ChartType = .line
 
 }

@@ -59,6 +59,15 @@ public enum ChartLabelOrientation {
     case vertical
 }
 
+/**
+ set zhe chart type
+ */
+public enum ChartType {
+    case line
+    case column
+}
+
+
 @IBDesignable
 open class Chart: UIControl {
 
@@ -127,20 +136,6 @@ open class Chart: UIControl {
     Displays the y-axis labels on the right side of the chart.
     */
     open var yLabelsOnRightSide: Bool = false
-    
-    fileprivate var yLabelMaxWidth = 0.0
-    /// y 轴 文字是否与 竖线对齐
-    fileprivate var yLabelShowMiddle = false
-    /// x 轴 文字是否与 竖线对齐
-    fileprivate var xLabelShowMiddle = false
-    /// x 轴竖线 底部偏移量
-    fileprivate var xLineEndSpace = 0.0
-    
-    /// y 轴横线 左边偏移量
-    fileprivate var yLineStartSpace = false
-    
-    /// 表格线条是否实线，默认 false ,  showYGridLine 为ture 时，虚线，设置此属性 可以改变为实线
-    fileprivate var showSolidLine = false
 
     /**
     Font used for the labels.
@@ -243,44 +238,61 @@ open class Chart: UIControl {
     /// hide  touch line
     open var hideTouchLine = false
     
+    // MARK: Private variables
+    /// 图表类型
+    fileprivate var chartType: ChartType = .line
+    
+    fileprivate var yLabelMaxWidth = 0.0
+    /// y 轴 文字是否与 竖线对齐
+    fileprivate var yLabelShowMiddle = false
+    /// x 轴 文字是否与 竖线对齐
+    fileprivate var xLabelShowMiddle = false
+    
+    /// x轴 文字在 两条 竖线中间展示
+    fileprivate var xLabelShowLinesMiddle = false
+
+    /// x 轴竖线 底部偏移量
+    fileprivate var xLineEndSpace = 0.0
+    
+    /// y 轴横线 左边偏移量
+    fileprivate var yLineStartSpace = false
+    
+    /// 表格线条是否实线，默认 false ,  showYGridLine 为ture 时，虚线，设置此属性 可以改变为实线
+    fileprivate var showSolidLine = false
+        
+    /// 表格x轴竖线间隔宽度（柱状图使用）
+    fileprivate var columnWidthSpace = 0.0
+    
     /// hide  top line
-    open var hideTopLine = false
+    fileprivate var hideTopLine = false
     /// hide  bottom line
-    open var hideBottomLine = false
+    fileprivate var hideBottomLine = false
     /// hide  right line
-    open var hideRightLine = false
+    fileprivate var hideRightLine = false
     /// hide  left line
-    open var hideLeftLine = false
+    fileprivate var hideLeftLine = false
     /**
     Alpha component for the area color.
     */
-    open var areaAlphaComponent: CGFloat = 0.1
+    fileprivate var areaAlphaComponent: CGFloat = 0.1
     
-    /**
-       是否显示折线数据点
-     */
-    open var showPointView = false
-    /**
-     数据点 圆点的尺寸
-     */
-    open var pointSize: CGSize = CGSize(width: 12.0, height: 12.0)
+    /// 是否显示折线数据点
+    fileprivate var showPointView = false
+    /// 数据点 圆点的尺寸
+    fileprivate var pointSize: CGSize = CGSize(width: 12.0, height: 12.0)
 
-    /**
-     x轴label是否旋转展示
-     */
-    open var xLabelsTranform = false
+    /// x轴label是否旋转展示
+    fileprivate var xLabelsTranform = false
     
-    /**
-     x轴是否添加点位, 默认添加
-     */
-    open var xZeroLinePoint = true
+    /// x轴是否添加点位, 默认添加
+    fileprivate var xZeroLinePoint = true
     
-    /**
-     y 为 0时 是否显示 横线，默认显示
-     */
-    open var yZeroLineShow = true
+    /// y 为 0时 是否显示 横线，默认显示
+    fileprivate var yZeroLineShow = true
     
-    // MARK: Private variables
+    /// y轴第一个刻度是否展示，默认隐藏
+    fileprivate var isHiddenFirstYLabel = true
+    
     fileprivate var pointViewArr: [ChartPointView] = []
 
     fileprivate var highlightShapeLayer: CAShapeLayer!
@@ -406,9 +418,15 @@ open class Chart: UIControl {
         if showYLabelsAndGrid && (yLabels != nil || series.count > 0) {
             drawLabelsAndGridOnYAxis()
         }
+        //绘制边框
+        drawAxes()
+        
+        //绘制 x轴
+        if showXLabelsAndGrid && (xLabels != nil || series.count > 0) {
+            drawLabelsAndGridOnXAxis()
+        }
         
         // Draw content
-
         for (index, series) in self.series.enumerated() {
 
             // Separate each line in multiple segments over and below the x axis
@@ -417,26 +435,692 @@ open class Chart: UIControl {
             segments.forEach({ segment in
                 let scaledXValues = scaleValuesOnXAxis( segment.map { $0.x } )
                 let scaledYValues = scaleValuesOnYAxis( segment.map { $0.y } )
-
-                if series.line {
-                    drawLine(scaledXValues, yValues: scaledYValues, seriesIndex: index, pointType: series.pointType)
+                
+                //柱状图
+                if chartType == .column {
+                    drawColumn(scaledXValues, yValues: scaledYValues, seriesIndex: index)
                 }
-                if series.area {
-                    drawArea(scaledXValues, yValues: scaledYValues, seriesIndex: index)
+                else {
+                    //默认折线图
+                    if series.line {
+                        drawLine(scaledXValues, yValues: scaledYValues, seriesIndex: index, pointType: series.pointType)
+                    }
+                    if series.area {
+                        drawArea(scaledXValues, yValues: scaledYValues, seriesIndex: index)
+                    }
                 }
             })
         }
 
-        drawAxes()
+    }
+}
+
+// MARK: 🔥🔥🔥🔥🔥🔥Utilities💧💧💧💧💧💧💧
+extension Chart {
+
+    fileprivate func valueFromPointAtX(_ x: CGFloat) -> Double {
+        let value = ((max.x-min.x) / Double(drawingWidth)) * Double(x) + min.x
+        return value
+    }
+
+    fileprivate func valueFromPointAtY(_ y: CGFloat) -> Double {
+        let value = ((max.y - min.y) / Double(drawingHeight)) * Double(y) + min.y
+        return -value
+    }
+
+    fileprivate class func findClosestInValues(
+        _ values: [Double],
+        forValue value: Double
+    ) -> (
+            lowestValue: Double?,
+            highestValue: Double?,
+            lowestIndex: Int?,
+            highestIndex: Int?
+        ) {
+        var lowestValue: Double?, highestValue: Double?, lowestIndex: Int?, highestIndex: Int?
+
+        values.enumerated().forEach { (i, currentValue) in
+
+            if currentValue <= value && (lowestValue == nil || lowestValue! < currentValue) {
+                lowestValue = currentValue
+                lowestIndex = i
+            }
+            if currentValue >= value && (highestValue == nil || highestValue! > currentValue) {
+                highestValue = currentValue
+                highestIndex = i
+            }
+
+        }
+        return (
+            lowestValue: lowestValue,
+            highestValue: highestValue,
+            lowestIndex: lowestIndex,
+            highestIndex: highestIndex
+        )
+    }
+
+    /**
+    Segment a line in multiple lines when the line touches the x-axis, i.e. separating
+    positive from negative values.
+    */
+    fileprivate class func segmentLine(_ line: ChartLineSegment, zeroLevel: Double, xZeroLinePoint: Bool) -> [ChartLineSegment] {
+        var segments: [ChartLineSegment] = []
+        var segment: ChartLineSegment = []
+
+        line.enumerated().forEach { (i, point) in
+            segment.append(point)
+            if i < line.count - 1 {
+                let nextPoint = line[i+1]
+                if xZeroLinePoint && (point.y >= zeroLevel && nextPoint.y < zeroLevel || point.y < zeroLevel && nextPoint.y >= zeroLevel) {
+                    // The segment intersects zeroLevel, close the segment with the intersection point
+                    let closingPoint = Chart.intersectionWithLevel(point, and: nextPoint, level: zeroLevel)
+                    segment.append(closingPoint)
+                    segments.append(segment)
+                    // Start a new segment
+                    segment = [closingPoint]
+                }
+            } else {
+                // End of the line
+                segments.append(segment)
+            }
+        }
+        return segments
+    }
+
+    /**
+    Return the intersection of a line between two points and 'y = level' line
+    */
+    fileprivate class func intersectionWithLevel(_ p1: ChartPoint, and p2: ChartPoint, level: Double) -> ChartPoint {
+        let dy1 = level - p1.y
+        let dy2 = level - p2.y
+        return (x: (p2.x * dy1 - p1.x * dy2) / (dy1 - dy2), y: level)
+    }
+}
+
+
+// MARK: 🔥🔥🔥🔥🔥🔥Scaling💧💧💧💧💧💧💧
+extension Chart {
+
+    fileprivate func getMinMax() -> (min: ChartPoint, max: ChartPoint) {
+        // Start with user-provided values
+
+        var min = (x: minX, y: minY)
+        var max = (x: maxX, y: maxY)
+
+        // Check in datasets
+
+        for series in self.series {
+            let xValues =  series.data.map { $0.x }
+            let yValues =  series.data.map { $0.y }
+
+            let newMinX = xValues.minOrZero()
+            let newMinY = yValues.minOrZero()
+            let newMaxX = xValues.maxOrZero()
+            let newMaxY = yValues.maxOrZero()
+
+            if min.x == nil || newMinX < min.x! { min.x = newMinX }
+            if min.y == nil || newMinY < min.y! { min.y = newMinY }
+            if max.x == nil || newMaxX > max.x! { max.x = newMaxX }
+            if max.y == nil || newMaxY > max.y! { max.y = newMaxY }
+        }
+
+        // Check in labels
+
+        if let xLabels = self.xLabels {
+            let newMinX = xLabels.minOrZero()
+            let newMaxX = xLabels.maxOrZero()
+            if min.x == nil || newMinX < min.x! { min.x = newMinX }
+            if max.x == nil || newMaxX > max.x! { max.x = newMaxX }
+        }
+
+        if let yLabels = self.yLabels {
+            let newMinY = yLabels.minOrZero()
+            let newMaxY = yLabels.maxOrZero()
+            if min.y == nil || newMinY < min.y! { min.y = newMinY }
+            if max.y == nil || newMaxY > max.y! { max.y = newMaxY }
+        }
+
+        if min.x == nil { min.x = 0 }
+        if min.y == nil { min.y = 0 }
+        if max.x == nil { max.x = 0 }
+        if max.y == nil { max.y = 0 }
+
+        return (min: (x: min.x!, y: min.y!), max: (x: max.x!, max.y!))
+    }
+
+    fileprivate func scaleValuesOnXAxis(_ values: [Double]) -> [Double] {
+        let width = Double(drawingWidth - self.yLabelMaxWidth - 5.0)
+
+        var factor: Double
+        if max.x - min.x == 0 {
+            factor = 0
+        } else {
+            factor = width / (max.x - min.x)
+        }
+
+        let scaled = values.map { factor * ($0 - self.min.x) }
+        return scaled
+    }
+
+    fileprivate func scaleValuesOnYAxis(_ values: [Double]) -> [Double] {
+        let height = Double(drawingHeight)
+        var factor: Double
+        if max.y - min.y == 0 {
+            factor = 0
+        } else {
+            factor = height / (max.y - min.y)
+        }
+
+        let scaled = values.map { Double(self.topInset) + height - factor * ($0 - self.min.y) }
+
+        return scaled
+    }
+
+    fileprivate func scaleValueOnYAxis(_ value: Double) -> Double {
+        let height = Double(drawingHeight)
+        var factor: Double
+        if max.y - min.y == 0 {
+            factor = 0
+        } else {
+            factor = height / (max.y - min.y)
+        }
+
+        let scaled = Double(self.topInset) + height - factor * (value - min.y)
+        return scaled
+    }
+
+    fileprivate func getZeroValueOnYAxis(zeroLevel: Double) -> Double {
+        if min.y > zeroLevel {
+            return scaleValueOnYAxis(min.y)
+        } else {
+            return scaleValueOnYAxis(zeroLevel)
+        }
+    }
+}
+
+// MARK: 🔥🔥🔥🔥🔥🔥Drawing💧💧💧💧💧💧💧
+extension Chart {
+    
+    /// 添加数据点
+    /// - Parameters:
+    ///   - frame: 尺寸
+    ///   - tag: tag
+    ///   - seriesIndex: 数据index
+    ///   - backColor: 背景se
+    /// - Returns: 点
+    fileprivate func addPointView(_ frame: CGRect, tag: Int, seriesIndex: Int, backColor: UIColor, pointType: ChartSeriesPointType) -> ChartPointView {
+        let pointView = ChartPointView(frame: frame)
         
-        if showXLabelsAndGrid && (xLabels != nil || series.count > 0) {
-            drawLabelsAndGridOnXAxis()
+        //传递 图表类型
+        pointView.chartType = chartType
+        
+        if pointType == .circle {
+            pointView.layer.cornerRadius = frame.size.width / 2.0
+        }
+        
+        let tap = UITapGestureRecognizer(target:self, action:#selector(tapClick(tap:)))
+        pointView.isUserInteractionEnabled=true
+        pointView.tag = tag
+        pointView.seriesIndex = seriesIndex
+        //给view添加事件
+        pointView.addGestureRecognizer(tap)
+        pointView.backgroundColor = backColor
+        return pointView
+    }
+    
+    
+    fileprivate func drawLine(_ xValues: [Double], yValues: [Double], seriesIndex: Int, pointType: ChartSeriesPointType) {
+        // YValues are "reverted" from top to bottom, so 'above' means <= level
+        let isAboveZeroLine = yValues.max()! <= self.scaleValueOnYAxis(series[seriesIndex].colors.zeroLevel)
+        let path = CGMutablePath()
+        
+        path.move(to: CGPoint(x: CGFloat(xValues.first!) + self.yLabelMaxWidth, y: CGFloat(yValues.first!)))
+        
+        let space = pointSize.width / 2.0
+        if showPointView {
+            let pointView = addPointView(CGRect(origin: CGPoint(x: CGFloat(xValues.first!)-space + self.yLabelMaxWidth, y: CGFloat(yValues.first!)-space), size: pointSize), tag: 0, seriesIndex: seriesIndex, backColor: series[seriesIndex].colors.above, pointType: pointType)
+            self.addSubview(pointView)
+            
+            self.pointViewArr.append(pointView)
+        }
+        
+        for i in 1..<yValues.count {
+            let y = yValues[i]
+        
+            path.addLine(to: CGPoint(x: CGFloat(xValues[i]) + self.yLabelMaxWidth, y: CGFloat(y)))
+            
+            if showPointView {
+                let pointView = addPointView(CGRect(origin: CGPoint(x: CGFloat(xValues[i])-space + self.yLabelMaxWidth, y: CGFloat(y)-space), size: pointSize), tag: i, seriesIndex: seriesIndex, backColor: series[seriesIndex].colors.above, pointType: pointType)
+                self.addSubview(pointView)
+                self.pointViewArr.append(pointView)
+            }
+        }
+
+        let lineLayer = CAShapeLayer()
+        lineLayer.frame = self.bounds
+        lineLayer.path = path
+
+        if isAboveZeroLine {
+            lineLayer.strokeColor = series[seriesIndex].colors.above.cgColor
+        } else {
+            lineLayer.strokeColor = series[seriesIndex].colors.below.cgColor
+        }
+        lineLayer.fillColor = nil
+        lineLayer.lineWidth = lineWidth
+        lineLayer.lineJoin = CAShapeLayerLineJoin.bevel
+
+        self.layer.addSublayer(lineLayer)
+
+        layerStore.append(lineLayer)
+    }
+
+    fileprivate func drawArea(_ xValues: [Double], yValues: [Double], seriesIndex: Int) {
+        // YValues are "reverted" from top to bottom, so 'above' means <= level
+        let isAboveZeroLine = yValues.max()! <= self.scaleValueOnYAxis(series[seriesIndex].colors.zeroLevel)
+        let area = CGMutablePath()
+        let zero = CGFloat(getZeroValueOnYAxis(zeroLevel: series[seriesIndex].colors.zeroLevel))
+
+        area.move(to: CGPoint(x: CGFloat(xValues[0]), y: zero))
+        for i in 0..<xValues.count {
+            area.addLine(to: CGPoint(x: CGFloat(xValues[i]), y: CGFloat(yValues[i])))
+        }
+        area.addLine(to: CGPoint(x: CGFloat(xValues.last!), y: zero))
+        let areaLayer = CAShapeLayer()
+        areaLayer.frame = self.bounds
+        areaLayer.path = area
+        areaLayer.strokeColor = nil
+        if isAboveZeroLine {
+            areaLayer.fillColor = series[seriesIndex].colors.above.withAlphaComponent(areaAlphaComponent).cgColor
+        } else {
+            areaLayer.fillColor = series[seriesIndex].colors.below.withAlphaComponent(areaAlphaComponent).cgColor
+        }
+        areaLayer.lineWidth = 0
+
+        self.layer.addSublayer(areaLayer)
+
+        layerStore.append(areaLayer)
+    }
+
+    fileprivate func drawAxes() {
+        let context = UIGraphicsGetCurrentContext()!
+        context.setStrokeColor(gridColor.cgColor)
+        context.setLineWidth(0.5)
+
+        // horizontal axis at the bottom
+        if !hideBottomLine {
+            context.move(to: CGPoint(x: CGFloat(self.yLabelMaxWidth), y: drawingHeight + topInset))
+            context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: drawingHeight + topInset))
+            context.strokePath()
+        }
+        
+        // horizontal axis at the top
+        
+        if !hideTopLine {
+            context.move(to: CGPoint(x: CGFloat(self.yLabelMaxWidth), y: CGFloat(0)))
+            context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: CGFloat(0)))
+            context.strokePath()
         }
         
 
+        // horizontal axis when y = 0
+        if min.y < 0 && max.y > 0 && yZeroLineShow {
+            let y = CGFloat(getZeroValueOnYAxis(zeroLevel: 0))
+            context.move(to: CGPoint(x: CGFloat(self.yLabelMaxWidth), y: y))
+            context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: y))
+            context.strokePath()
+        }
+
+        // vertical axis on the left
+        if !hideLeftLine {
+            context.move(to: CGPoint(x: CGFloat(self.yLabelMaxWidth), y: CGFloat(0)))
+            context.addLine(to: CGPoint(x: CGFloat(self.yLabelMaxWidth), y: drawingHeight + topInset))
+            context.strokePath()
+        }
+
+        // vertical axis on the right
+        if !hideRightLine {
+            context.move(to: CGPoint(x: CGFloat(drawingWidth), y: CGFloat(0)))
+            context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: drawingHeight + topInset))
+            context.strokePath()
+        }
+    }
+
+    fileprivate func drawLabelsAndGridOnXAxis() {
+        let context = UIGraphicsGetCurrentContext()!
+        context.setStrokeColor(gridColor.cgColor)
+        context.setLineWidth(gridLineWidth)
+
+        var labels: [Double]
+        if xLabels == nil {
+            // Use labels from the first series
+            labels = series[0].data.map({ (point: ChartPoint) -> Double in
+                return point.x})
+        } else {
+            labels = xLabels!
+        }
+
+        let scaled = scaleValuesOnXAxis(labels)
+        let padding: CGFloat = 5.0
+        
+        //竖线间隙（宽度）
+        let lineSpace = scaled[1]
+        columnWidthSpace = lineSpace
+        
+        scaled.enumerated().forEach { (i, value) in
+            let x = CGFloat(value)
+            let isLastLabel = x == drawingWidth
+
+            // Add vertical grid for each label, except axes on the left and right
+
+            let originX = self.yLabelMaxWidth + x
+            context.move(to: CGPoint(x: originX, y: CGFloat(0)))
+            context.addLine(to: CGPoint(x:originX, y: bounds.height - xLineEndSpace))
+            context.strokePath()
+            
+            if xLabelsSkipLast && isLastLabel {
+                // Do not add label at the most right position
+                return
+            }
+
+            // Add label
+            let label = UILabel(frame: CGRect(x: self.yLabelMaxWidth + x - (i == 0 ? padding : 0.0), y: drawingHeight + 5.0, width: 0, height: 0))
+            label.font = labelFont
+            label.text = xLabelsFormatter(i, labels[i])
+            label.textColor = labelColor
+
+            // Set label size
+            label.sizeToFit()
+            // Center label vertically
+            label.frame.origin.y += topInset
+            if xLabelsOrientation == .horizontal {
+                // Add left padding
+                label.frame.origin.y -= (label.frame.height - bottomInset) / 2
+    
+                if xLabelShowMiddle {
+                    label.frame.origin.x -= label.frame.size.width/2.0
+                    
+                    label.frame.origin.x += (i == 0 ? padding : 0.0)
+                }
+                else if xLabelShowLinesMiddle {
+                    
+                    let leftSpace = (lineSpace - label.frame.width) / 2.0
+                    label.frame.origin.x = originX + (leftSpace < 0.0 ? 0.0 : leftSpace)
+                }
+                
+                // Set label's text alignment
+                //label.frame.size.width = (drawingWidth / CGFloat(labels.count)) - padding * 2
+                label.textAlignment = xLabelsTextAlignment
+            } else {
+                label.transform = CGAffineTransform(rotationAngle: CGFloat(Double.pi / 2))
+
+                // Adjust vertical position according to the label's height
+                label.frame.origin.y += label.frame.size.height / 2
+
+                // Adjust horizontal position as the series line
+                label.frame.origin.x = x
+                if xLabelsTextAlignment == .center {
+                    // Align horizontally in series
+                    label.frame.origin.x += ((drawingWidth / CGFloat(labels.count)) / 2) - (label.frame.size.width / 2)
+                } else {
+                    // Give some space from the vertical line
+                    label.frame.origin.x += padding
+                }
+            }
+            
+            if xLabelsTranform {
+                label.transform = CGAffineTransform(rotationAngle: CGFloat(-Double.pi / 4))
+            }
+            
+            self.addSubview(label)
+        }
+    }
+
+    fileprivate func drawLabelsAndGridOnYAxis() {
+        let context = UIGraphicsGetCurrentContext()!
+        context.setStrokeColor(gridColor.cgColor)
+        context.setLineWidth(0.5)
+
+        var labels: [Double]
+        if yLabels == nil {
+            labels = [(min.y + max.y) / 2, max.y]
+            if yLabelsOnRightSide || min.y != 0 {
+                labels.insert(min.y, at: 0)
+            }
+        } else {
+            labels = yLabels!
+        }
+
+        //计算y轴上最大宽度
+        var maxWidth = 0.0
+        labels.forEach { item in
+            let size = (String(Float(item)) as NSString).boundingRect(with: CGSize(width: 200, height: labelFont!.pointSize), options: .usesLineFragmentOrigin, attributes: [NSAttributedString.Key.font : labelFont!], context: nil)
+            if maxWidth < size.width {
+                maxWidth = size.width
+            }
+        }
+        
+        self.yLabelMaxWidth = maxWidth + (xLabelShowMiddle ? 5.0 : 0.0)
+        
+        let scaled = scaleValuesOnYAxis(labels)
+        let padding: CGFloat = 5
+        let zero = CGFloat(getZeroValueOnYAxis(zeroLevel: 0))
+
+        scaled.enumerated().forEach { (i, value) in
+
+            let y = CGFloat(value)
+
+            // Add horizontal grid for each label, but not over axes
+            if y != drawingHeight + topInset && y != zero && showYGridLine{
+
+                context.move(to: CGPoint(x: CGFloat(0) + (yLineStartSpace ? maxWidth + (xLabelShowMiddle ? padding : 0.0) : 0.0), y: y))
+                context.addLine(to: CGPoint(x: self.bounds.width, y: y))
+                if labels[i] != 0 && !showSolidLine {
+                    // Horizontal grid for 0 is not dashed
+                    context.setLineDash(phase: CGFloat(0), lengths: [CGFloat(5)])
+                } else {
+                    context.setLineDash(phase: CGFloat(0), lengths: [])
+                }
+                context.strokePath()
+            }
+            
+            //第0个不要展示
+            if i == 0 && isHiddenFirstYLabel{
+                return
+            }
+
+            //不需要间隙
+            let label = UILabel(frame: CGRect(x: 0, y: y, width: maxWidth, height: 0))
+            label.font = labelFont
+            label.text = yLabelsFormatter(i, labels[i])
+            label.textColor = labelColor
+            label.sizeToFit()
+
+            if yLabelsOnRightSide {
+                label.frame.origin.x = drawingWidth
+                label.frame.origin.x -= label.frame.width + padding
+                
+            }
+            else {
+                label.textAlignment = .right
+                label.frame.size.width = maxWidth
+            }
+
+            // Labels should be placed above the horizontal grid
+            label.frame.origin.y -= (yLabelShowMiddle ? label.frame.height / 2.0 : label.frame.height)
+
+            self.addSubview(label)
+        }
+        UIGraphicsEndImageContext()
     }
     
-    // MARK: - 🔥🔥🔥🔥🔥扩展功能链式编程设置属性🔥🔥🔥🔥🔥🔥
+    // 🔥🔥🔥🔥🔥🔥绘制柱状图💧💧💧💧💧💧💧
+    fileprivate func drawColumn(_ xValues: [Double], yValues: [Double], seriesIndex: Int) {
+        
+        // YValues are "reverted" from top to bottom, so 'above' means <= level
+        let isAboveZeroLine = yValues.max()! <= self.scaleValueOnYAxis(series[seriesIndex].colors.zeroLevel)
+        
+        for i in 0..<yValues.count {
+            let y = yValues[i]
+            let width = columnWidthSpace/2.0
+            let viewX = CGFloat(xValues[i]) + self.yLabelMaxWidth + columnWidthSpace/2.0 - width/2.0
+            let viewY = CGFloat(y)
+            let height = bounds.height - xLineEndSpace - viewY
+            
+            var backColor = series[seriesIndex].colors.above
+            if !isAboveZeroLine {
+                backColor = series[seriesIndex].colors.below
+            }
+            
+            let columnView = addPointView(CGRect(x: viewX, y: viewY, width: width, height: height), tag: i, seriesIndex: seriesIndex, backColor: backColor, pointType: .square)
+            self.addSubview(columnView)
+            self.pointViewArr.append(columnView)
+        }
+    }
+}
+
+// MARK: 🔥🔥🔥🔥🔥🔥Touch events💧💧💧💧💧💧💧
+extension Chart {
+    
+    //事件点击
+    @objc func tapClick(tap: UITapGestureRecognizer) {
+        
+        if tap.view is ChartPointView {
+            let pointView = tap.view as! ChartPointView
+            
+            if pointView.chartType == .line {
+                self.pointViewArr.forEach { pv in
+                    if pv.isScaleBig {
+                        var transform = pv.transform
+                        transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+                        pv.transform = transform
+                        pv.isScaleBig = false
+                    }
+                }
+                
+                //NSLog("--------\(series[pointView.seriesIndex!].data[pointView.tag])")
+                
+                var transform = pointView.transform
+                transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
+                pointView.transform = transform
+                pointView.isScaleBig = true
+            }
+            
+            
+            delegate?.pointViwDidClick(series[pointView.seriesIndex!].data[pointView.tag], xLabelsData: xLabelsData ?? [""], seriesIndex: pointView.seriesIndex!)
+            
+        }
+    }
+    
+    fileprivate func drawHighlightLineFromLeftPosition(_ left: CGFloat) {
+        if let shapeLayer = highlightShapeLayer {
+            // Use line already created
+            let path = CGMutablePath()
+
+            path.move(to: CGPoint(x: left, y: 0))
+            path.addLine(to: CGPoint(x: left, y: drawingHeight + topInset))
+            shapeLayer.path = path
+        } else {
+            // Create the line
+            let path = CGMutablePath()
+
+            path.move(to: CGPoint(x: left, y: CGFloat(0)))
+            path.addLine(to: CGPoint(x: left, y: drawingHeight + topInset))
+            let shapeLayer = CAShapeLayer()
+            shapeLayer.frame = self.bounds
+            shapeLayer.path = path
+            shapeLayer.strokeColor = highlightLineColor.cgColor
+            shapeLayer.fillColor = nil
+            shapeLayer.lineWidth = highlightLineWidth
+
+            highlightShapeLayer = shapeLayer
+            layer.addSublayer(shapeLayer)
+            layerStore.append(shapeLayer)
+        }
+    }
+
+    func handleTouchEvents(_ touches: Set<UITouch>, event: UIEvent!) {
+        let point = touches.first!
+        let left = point.location(in: self).x
+        let x = valueFromPointAtX(left)
+
+        if left < 0 || left > (drawingWidth as CGFloat) {
+            // Remove highlight line at the end of the touch event
+            if let shapeLayer = highlightShapeLayer {
+                shapeLayer.path = nil
+            }
+            delegate?.didFinishTouchingChart(self)
+            return
+        }
+
+        drawHighlightLineFromLeftPosition(left)
+
+        if delegate == nil {
+            return
+        }
+
+        var indexes: [Int?] = []
+
+        for series in self.series {
+            var index: Int? = nil
+            let xValues = series.data.map({ (point: ChartPoint) -> Double in
+                return point.x })
+            let closest = Chart.findClosestInValues(xValues, forValue: x)
+            if closest.lowestIndex != nil && closest.highestIndex != nil {
+                // Consider valid only values on the right
+                index = closest.lowestIndex
+            }
+            indexes.append(index)
+        }
+        delegate!.didTouchChart(self, indexes: indexes, x: x, left: left)
+    }
+
+    override open func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        if !hideTouchLine {
+            handleTouchEvents(touches, event: event)
+        }
+        
+    }
+
+    override open func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if !hideTouchLine {
+            
+            handleTouchEvents(touches, event: event)
+            if self.hideHighlightLineOnTouchEnd {
+                if let shapeLayer = highlightShapeLayer {
+                    shapeLayer.path = nil
+                }
+            }
+            delegate?.didEndTouchingChart(self)
+        }
+        
+        self.pointViewArr.forEach { pv in
+            if pv.isScaleBig {
+                var transform = pv.transform
+                transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+                pv.transform = transform
+                pv.isScaleBig = false
+            }
+        }
+    }
+
+    override open func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        if !hideTouchLine {
+            handleTouchEvents(touches, event: event)
+        }
+        
+        
+    }
+}
+
+// MARK: - 🔥🔥🔥🔥🔥扩展功能链式编程设置属性🔥🔥🔥🔥🔥🔥
+extension Chart {
+    @discardableResult
+    public func chartType(_ prop: ChartType) -> Chart {
+        chartType = prop
+        return self
+    }
+    
     @discardableResult
     public func xLabelsTextAlignment(_ prop: NSTextAlignment) -> Chart {
         xLabelsTextAlignment = prop
@@ -538,6 +1222,15 @@ open class Chart: UIControl {
     }
     
     @discardableResult
+    public func xLabelShowLinesMiddle(_ prop: Bool) -> Chart {
+        xLabelShowLinesMiddle = prop
+        if prop {
+            xLabelShowMiddle = false
+        }
+        return self
+    }
+    
+    @discardableResult
     public func xLineEndSpace(_ prop: Double) -> Chart {
         xLineEndSpace = prop
         return self
@@ -574,614 +1267,10 @@ open class Chart: UIControl {
         return self
     }
     
-    // MARK: - Scaling
-
-    fileprivate func getMinMax() -> (min: ChartPoint, max: ChartPoint) {
-        // Start with user-provided values
-
-        var min = (x: minX, y: minY)
-        var max = (x: maxX, y: maxY)
-
-        // Check in datasets
-
-        for series in self.series {
-            let xValues =  series.data.map { $0.x }
-            let yValues =  series.data.map { $0.y }
-
-            let newMinX = xValues.minOrZero()
-            let newMinY = yValues.minOrZero()
-            let newMaxX = xValues.maxOrZero()
-            let newMaxY = yValues.maxOrZero()
-
-            if min.x == nil || newMinX < min.x! { min.x = newMinX }
-            if min.y == nil || newMinY < min.y! { min.y = newMinY }
-            if max.x == nil || newMaxX > max.x! { max.x = newMaxX }
-            if max.y == nil || newMaxY > max.y! { max.y = newMaxY }
-        }
-
-        // Check in labels
-
-        if let xLabels = self.xLabels {
-            let newMinX = xLabels.minOrZero()
-            let newMaxX = xLabels.maxOrZero()
-            if min.x == nil || newMinX < min.x! { min.x = newMinX }
-            if max.x == nil || newMaxX > max.x! { max.x = newMaxX }
-        }
-
-        if let yLabels = self.yLabels {
-            let newMinY = yLabels.minOrZero()
-            let newMaxY = yLabels.maxOrZero()
-            if min.y == nil || newMinY < min.y! { min.y = newMinY }
-            if max.y == nil || newMaxY > max.y! { max.y = newMaxY }
-        }
-
-        if min.x == nil { min.x = 0 }
-        if min.y == nil { min.y = 0 }
-        if max.x == nil { max.x = 0 }
-        if max.y == nil { max.y = 0 }
-
-        return (min: (x: min.x!, y: min.y!), max: (x: max.x!, max.y!))
-    }
-
-    fileprivate func scaleValuesOnXAxis(_ values: [Double]) -> [Double] {
-        let width = Double(drawingWidth - self.yLabelMaxWidth - 5.0)
-
-        var factor: Double
-        if max.x - min.x == 0 {
-            factor = 0
-        } else {
-            factor = width / (max.x - min.x)
-        }
-
-        let scaled = values.map { factor * ($0 - self.min.x) }
-        return scaled
-    }
-
-    fileprivate func scaleValuesOnYAxis(_ values: [Double]) -> [Double] {
-        let height = Double(drawingHeight)
-        var factor: Double
-        if max.y - min.y == 0 {
-            factor = 0
-        } else {
-            factor = height / (max.y - min.y)
-        }
-
-        let scaled = values.map { Double(self.topInset) + height - factor * ($0 - self.min.y) }
-
-        return scaled
-    }
-
-    fileprivate func scaleValueOnYAxis(_ value: Double) -> Double {
-        let height = Double(drawingHeight)
-        var factor: Double
-        if max.y - min.y == 0 {
-            factor = 0
-        } else {
-            factor = height / (max.y - min.y)
-        }
-
-        let scaled = Double(self.topInset) + height - factor * (value - min.y)
-        return scaled
-    }
-
-    fileprivate func getZeroValueOnYAxis(zeroLevel: Double) -> Double {
-        if min.y > zeroLevel {
-            return scaleValueOnYAxis(min.y)
-        } else {
-            return scaleValueOnYAxis(zeroLevel)
-        }
-    }
-
-    // MARK: - Drawings
-    //事件点击
-    @objc func tapClick(tap: UITapGestureRecognizer) {
-        
-        if tap.view is ChartPointView {
-            let pointView = tap.view as! ChartPointView
-            
-            self.pointViewArr.forEach { pv in
-                if pv.isScaleBig {
-                    var transform = pv.transform
-                    transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
-                    pv.transform = transform
-                    pv.isScaleBig = false
-                }
-            }
-            
-            //NSLog("--------\(series[pointView.seriesIndex!].data[pointView.tag])")
-            
-            var transform = pointView.transform
-            transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
-            pointView.transform = transform
-            pointView.isScaleBig = true
-            
-            
-            delegate?.pointViwDidClick(series[pointView.seriesIndex!].data[pointView.tag], xLabelsData: xLabelsData ?? [""], seriesIndex: pointView.seriesIndex!)
-            
-        }
-    }
-    
-    
-    /// 添加数据点
-    /// - Parameters:
-    ///   - frame: 尺寸
-    ///   - tag: tag
-    ///   - seriesIndex: 数据index
-    ///   - backColor: 背景se
-    /// - Returns: 点
-    fileprivate func addPointView(_ frame: CGRect, tag: Int, seriesIndex: Int, backColor: UIColor, pointType: ChartSeriesPointType) -> ChartPointView {
-        let pointView = ChartPointView(frame: frame)
-        
-        if pointType == .circle {
-            pointView.layer.cornerRadius = frame.size.width / 2.0
-        }
-        
-        let tap = UITapGestureRecognizer(target:self, action:#selector(tapClick(tap:)))
-        pointView.isUserInteractionEnabled=true
-        pointView.tag = tag
-        pointView.seriesIndex = seriesIndex
-        //给view添加事件
-        pointView.addGestureRecognizer(tap)
-        pointView.backgroundColor = backColor
-        return pointView
-    }
-    
-    
-    fileprivate func drawLine(_ xValues: [Double], yValues: [Double], seriesIndex: Int, pointType: ChartSeriesPointType) {
-        // YValues are "reverted" from top to bottom, so 'above' means <= level
-        let isAboveZeroLine = yValues.max()! <= self.scaleValueOnYAxis(series[seriesIndex].colors.zeroLevel)
-        let path = CGMutablePath()
-        
-        path.move(to: CGPoint(x: CGFloat(xValues.first!) + self.yLabelMaxWidth, y: CGFloat(yValues.first!)))
-        
-        let space = pointSize.width / 2.0
-        if showPointView {
-            let pointView = addPointView(CGRect(origin: CGPoint(x: CGFloat(xValues.first!)-space + self.yLabelMaxWidth, y: CGFloat(yValues.first!)-space), size: pointSize), tag: 0, seriesIndex: seriesIndex, backColor: series[seriesIndex].colors.above, pointType: pointType)
-            self.addSubview(pointView)
-            
-            self.pointViewArr.append(pointView)
-        }
-        
-        for i in 1..<yValues.count {
-            let y = yValues[i]
-        
-            path.addLine(to: CGPoint(x: CGFloat(xValues[i]) + self.yLabelMaxWidth, y: CGFloat(y)))
-            
-            if showPointView {
-                let pointView = addPointView(CGRect(origin: CGPoint(x: CGFloat(xValues[i])-space + self.yLabelMaxWidth, y: CGFloat(y)-space), size: pointSize), tag: i, seriesIndex: seriesIndex, backColor: series[seriesIndex].colors.above, pointType: pointType)
-                self.addSubview(pointView)
-                self.pointViewArr.append(pointView)
-            }
-        }
-
-        let lineLayer = CAShapeLayer()
-        lineLayer.frame = self.bounds
-        lineLayer.path = path
-
-        if isAboveZeroLine {
-            lineLayer.strokeColor = series[seriesIndex].colors.above.cgColor
-        } else {
-            lineLayer.strokeColor = series[seriesIndex].colors.below.cgColor
-        }
-        lineLayer.fillColor = nil
-        lineLayer.lineWidth = lineWidth
-        lineLayer.lineJoin = CAShapeLayerLineJoin.bevel
-
-        self.layer.addSublayer(lineLayer)
-
-        layerStore.append(lineLayer)
-    }
-
-    fileprivate func drawArea(_ xValues: [Double], yValues: [Double], seriesIndex: Int) {
-        // YValues are "reverted" from top to bottom, so 'above' means <= level
-        let isAboveZeroLine = yValues.max()! <= self.scaleValueOnYAxis(series[seriesIndex].colors.zeroLevel)
-        let area = CGMutablePath()
-        let zero = CGFloat(getZeroValueOnYAxis(zeroLevel: series[seriesIndex].colors.zeroLevel))
-
-        area.move(to: CGPoint(x: CGFloat(xValues[0]), y: zero))
-        for i in 0..<xValues.count {
-            area.addLine(to: CGPoint(x: CGFloat(xValues[i]), y: CGFloat(yValues[i])))
-        }
-        area.addLine(to: CGPoint(x: CGFloat(xValues.last!), y: zero))
-        let areaLayer = CAShapeLayer()
-        areaLayer.frame = self.bounds
-        areaLayer.path = area
-        areaLayer.strokeColor = nil
-        if isAboveZeroLine {
-            areaLayer.fillColor = series[seriesIndex].colors.above.withAlphaComponent(areaAlphaComponent).cgColor
-        } else {
-            areaLayer.fillColor = series[seriesIndex].colors.below.withAlphaComponent(areaAlphaComponent).cgColor
-        }
-        areaLayer.lineWidth = 0
-
-        self.layer.addSublayer(areaLayer)
-
-        layerStore.append(areaLayer)
-    }
-
-    fileprivate func drawAxes() {
-        let context = UIGraphicsGetCurrentContext()!
-        context.setStrokeColor(gridColor.cgColor)
-        context.setLineWidth(0.5)
-
-        // horizontal axis at the bottom
-        if !hideBottomLine {
-            context.move(to: CGPoint(x: CGFloat(0), y: drawingHeight + topInset))
-            context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: drawingHeight + topInset))
-            context.strokePath()
-        }
-        
-        // horizontal axis at the top
-        
-        if !hideTopLine {
-            context.move(to: CGPoint(x: CGFloat(0), y: CGFloat(0)))
-            context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: CGFloat(0)))
-            context.strokePath()
-        }
-        
-
-        // horizontal axis when y = 0
-        if min.y < 0 && max.y > 0 && yZeroLineShow {
-            let y = CGFloat(getZeroValueOnYAxis(zeroLevel: 0))
-            context.move(to: CGPoint(x: CGFloat(0), y: y))
-            context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: y))
-            context.strokePath()
-        }
-
-        // vertical axis on the left
-        if !hideLeftLine {
-            context.move(to: CGPoint(x: CGFloat(0), y: CGFloat(0)))
-            context.addLine(to: CGPoint(x: CGFloat(0), y: drawingHeight + topInset))
-            context.strokePath()
-        }
-
-        // vertical axis on the right
-        if !hideRightLine {
-            context.move(to: CGPoint(x: CGFloat(drawingWidth), y: CGFloat(0)))
-            context.addLine(to: CGPoint(x: CGFloat(drawingWidth), y: drawingHeight + topInset))
-            context.strokePath()
-        }
-    }
-
-    fileprivate func drawLabelsAndGridOnXAxis() {
-        let context = UIGraphicsGetCurrentContext()!
-        context.setStrokeColor(gridColor.cgColor)
-        context.setLineWidth(gridLineWidth)
-
-        var labels: [Double]
-        if xLabels == nil {
-            // Use labels from the first series
-            labels = series[0].data.map({ (point: ChartPoint) -> Double in
-                return point.x})
-        } else {
-            labels = xLabels!
-        }
-
-        let scaled = scaleValuesOnXAxis(labels)
-        let padding: CGFloat = 5.0
-        scaled.enumerated().forEach { (i, value) in
-            let x = CGFloat(value)
-            let isLastLabel = x == drawingWidth
-
-            // Add vertical grid for each label, except axes on the left and right
-
-            let originX = self.yLabelMaxWidth + x
-            context.move(to: CGPoint(x: originX, y: CGFloat(0)))
-            context.addLine(to: CGPoint(x:originX, y: bounds.height - xLineEndSpace))
-            context.strokePath()
-            
-            if xLabelsSkipLast && isLastLabel {
-                // Do not add label at the most right position
-                return
-            }
-
-            // Add label
-            let label = UILabel(frame: CGRect(x: self.yLabelMaxWidth + x - (i == 0 ? padding : 0.0), y: drawingHeight, width: 0, height: 0))
-            label.font = labelFont
-            label.text = xLabelsFormatter(i, labels[i])
-            label.textColor = labelColor
-
-            // Set label size
-            label.sizeToFit()
-            // Center label vertically
-            label.frame.origin.y += topInset
-            if xLabelsOrientation == .horizontal {
-                // Add left padding
-                label.frame.origin.y -= (label.frame.height - bottomInset) / 2
-    
-                if xLabelShowMiddle {
-                    label.frame.origin.x -= label.frame.size.width/2.0
-                    
-                    label.frame.origin.x += (i == 0 ? padding : 0.0)
-                }
-                
-                // Set label's text alignment
-                //label.frame.size.width = (drawingWidth / CGFloat(labels.count)) - padding * 2
-                label.textAlignment = xLabelsTextAlignment
-            } else {
-                label.transform = CGAffineTransform(rotationAngle: CGFloat(Double.pi / 2))
-
-                // Adjust vertical position according to the label's height
-                label.frame.origin.y += label.frame.size.height / 2
-
-                // Adjust horizontal position as the series line
-                label.frame.origin.x = x
-                if xLabelsTextAlignment == .center {
-                    // Align horizontally in series
-                    label.frame.origin.x += ((drawingWidth / CGFloat(labels.count)) / 2) - (label.frame.size.width / 2)
-                } else {
-                    // Give some space from the vertical line
-                    label.frame.origin.x += padding
-                }
-            }
-            
-            if xLabelsTranform {
-                label.transform = CGAffineTransform(rotationAngle: CGFloat(-Double.pi / 4))
-            }
-            
-            self.addSubview(label)
-        }
-    }
-
-    fileprivate func drawLabelsAndGridOnYAxis() {
-        let context = UIGraphicsGetCurrentContext()!
-        context.setStrokeColor(gridColor.cgColor)
-        context.setLineWidth(0.5)
-
-        var labels: [Double]
-        if yLabels == nil {
-            labels = [(min.y + max.y) / 2, max.y]
-            if yLabelsOnRightSide || min.y != 0 {
-                labels.insert(min.y, at: 0)
-            }
-        } else {
-            labels = yLabels!
-        }
-
-        //计算y轴上最大宽度
-        var maxWidth = 0.0
-        labels.forEach { item in
-            let size = (String(Float(item)) as NSString).boundingRect(with: CGSize(width: 200, height: labelFont!.pointSize), options: .usesLineFragmentOrigin, attributes: [NSAttributedString.Key.font : labelFont!], context: nil)
-            if maxWidth < size.width {
-                maxWidth = size.width
-            }
-        }
-        
-        self.yLabelMaxWidth = maxWidth + (xLabelShowMiddle ? 5.0 : 0.0)
-        
-        let scaled = scaleValuesOnYAxis(labels)
-        let padding: CGFloat = 5
-        let zero = CGFloat(getZeroValueOnYAxis(zeroLevel: 0))
-
-        scaled.enumerated().forEach { (i, value) in
-
-            let y = CGFloat(value)
-
-            // Add horizontal grid for each label, but not over axes
-            if y != drawingHeight + topInset && y != zero && showYGridLine{
-
-                context.move(to: CGPoint(x: CGFloat(0) + (yLineStartSpace ? maxWidth + (xLabelShowMiddle ? padding : 0.0) : 0.0), y: y))
-                context.addLine(to: CGPoint(x: self.bounds.width, y: y))
-                if labels[i] != 0 && !showSolidLine {
-                    // Horizontal grid for 0 is not dashed
-                    context.setLineDash(phase: CGFloat(0), lengths: [CGFloat(5)])
-                } else {
-                    context.setLineDash(phase: CGFloat(0), lengths: [])
-                }
-                context.strokePath()
-            }
-            
-            //第0个不要展示
-            if i == 0 {
-                return
-            }
-
-            //不需要间隙
-            let label = UILabel(frame: CGRect(x: 0, y: y, width: maxWidth, height: 0))
-            label.font = labelFont
-            label.text = yLabelsFormatter(i, labels[i])
-            label.textColor = labelColor
-            label.sizeToFit()
-
-            if yLabelsOnRightSide {
-                label.frame.origin.x = drawingWidth
-                label.frame.origin.x -= label.frame.width + padding
-                
-            }
-            else {
-                label.textAlignment = .right
-                label.frame.size.width = maxWidth
-            }
-
-            // Labels should be placed above the horizontal grid
-            label.frame.origin.y -= (yLabelShowMiddle ? label.frame.height / 2.0 : label.frame.height)
-
-            self.addSubview(label)
-        }
-        UIGraphicsEndImageContext()
-    }
-
-    // MARK: - Touch events
-
-    fileprivate func drawHighlightLineFromLeftPosition(_ left: CGFloat) {
-        if let shapeLayer = highlightShapeLayer {
-            // Use line already created
-            let path = CGMutablePath()
-
-            path.move(to: CGPoint(x: left, y: 0))
-            path.addLine(to: CGPoint(x: left, y: drawingHeight + topInset))
-            shapeLayer.path = path
-        } else {
-            // Create the line
-            let path = CGMutablePath()
-
-            path.move(to: CGPoint(x: left, y: CGFloat(0)))
-            path.addLine(to: CGPoint(x: left, y: drawingHeight + topInset))
-            let shapeLayer = CAShapeLayer()
-            shapeLayer.frame = self.bounds
-            shapeLayer.path = path
-            shapeLayer.strokeColor = highlightLineColor.cgColor
-            shapeLayer.fillColor = nil
-            shapeLayer.lineWidth = highlightLineWidth
-
-            highlightShapeLayer = shapeLayer
-            layer.addSublayer(shapeLayer)
-            layerStore.append(shapeLayer)
-        }
-    }
-
-    func handleTouchEvents(_ touches: Set<UITouch>, event: UIEvent!) {
-        let point = touches.first!
-        let left = point.location(in: self).x
-        let x = valueFromPointAtX(left)
-
-        if left < 0 || left > (drawingWidth as CGFloat) {
-            // Remove highlight line at the end of the touch event
-            if let shapeLayer = highlightShapeLayer {
-                shapeLayer.path = nil
-            }
-            delegate?.didFinishTouchingChart(self)
-            return
-        }
-
-        drawHighlightLineFromLeftPosition(left)
-
-        if delegate == nil {
-            return
-        }
-
-        var indexes: [Int?] = []
-
-        for series in self.series {
-            var index: Int? = nil
-            let xValues = series.data.map({ (point: ChartPoint) -> Double in
-                return point.x })
-            let closest = Chart.findClosestInValues(xValues, forValue: x)
-            if closest.lowestIndex != nil && closest.highestIndex != nil {
-                // Consider valid only values on the right
-                index = closest.lowestIndex
-            }
-            indexes.append(index)
-        }
-        delegate!.didTouchChart(self, indexes: indexes, x: x, left: left)
-    }
-
-    override open func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        
-        if !hideTouchLine {
-            handleTouchEvents(touches, event: event)
-        }
-        
-    }
-
-    override open func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if !hideTouchLine {
-            
-            handleTouchEvents(touches, event: event)
-            if self.hideHighlightLineOnTouchEnd {
-                if let shapeLayer = highlightShapeLayer {
-                    shapeLayer.path = nil
-                }
-            }
-            delegate?.didEndTouchingChart(self)
-        }
-        
-        self.pointViewArr.forEach { pv in
-            if pv.isScaleBig {
-                var transform = pv.transform
-                transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
-                pv.transform = transform
-                pv.isScaleBig = false
-            }
-        }
-    }
-
-    override open func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if !hideTouchLine {
-            handleTouchEvents(touches, event: event)
-        }
-        
-        
-    }
-
-    // MARK: - Utilities
-
-    fileprivate func valueFromPointAtX(_ x: CGFloat) -> Double {
-        let value = ((max.x-min.x) / Double(drawingWidth)) * Double(x) + min.x
-        return value
-    }
-
-    fileprivate func valueFromPointAtY(_ y: CGFloat) -> Double {
-        let value = ((max.y - min.y) / Double(drawingHeight)) * Double(y) + min.y
-        return -value
-    }
-
-    fileprivate class func findClosestInValues(
-        _ values: [Double],
-        forValue value: Double
-    ) -> (
-            lowestValue: Double?,
-            highestValue: Double?,
-            lowestIndex: Int?,
-            highestIndex: Int?
-        ) {
-        var lowestValue: Double?, highestValue: Double?, lowestIndex: Int?, highestIndex: Int?
-
-        values.enumerated().forEach { (i, currentValue) in
-
-            if currentValue <= value && (lowestValue == nil || lowestValue! < currentValue) {
-                lowestValue = currentValue
-                lowestIndex = i
-            }
-            if currentValue >= value && (highestValue == nil || highestValue! > currentValue) {
-                highestValue = currentValue
-                highestIndex = i
-            }
-
-        }
-        return (
-            lowestValue: lowestValue,
-            highestValue: highestValue,
-            lowestIndex: lowestIndex,
-            highestIndex: highestIndex
-        )
-    }
-
-    /**
-    Segment a line in multiple lines when the line touches the x-axis, i.e. separating
-    positive from negative values.
-    */
-    fileprivate class func segmentLine(_ line: ChartLineSegment, zeroLevel: Double, xZeroLinePoint: Bool) -> [ChartLineSegment] {
-        var segments: [ChartLineSegment] = []
-        var segment: ChartLineSegment = []
-
-        line.enumerated().forEach { (i, point) in
-            segment.append(point)
-            if i < line.count - 1 {
-                let nextPoint = line[i+1]
-                if xZeroLinePoint && (point.y >= zeroLevel && nextPoint.y < zeroLevel || point.y < zeroLevel && nextPoint.y >= zeroLevel) {
-                    // The segment intersects zeroLevel, close the segment with the intersection point
-                    let closingPoint = Chart.intersectionWithLevel(point, and: nextPoint, level: zeroLevel)
-                    segment.append(closingPoint)
-                    segments.append(segment)
-                    // Start a new segment
-                    segment = [closingPoint]
-                }
-            } else {
-                // End of the line
-                segments.append(segment)
-            }
-        }
-        return segments
-    }
-
-    /**
-    Return the intersection of a line between two points and 'y = level' line
-    */
-    fileprivate class func intersectionWithLevel(_ p1: ChartPoint, and p2: ChartPoint, level: Double) -> ChartPoint {
-        let dy1 = level - p1.y
-        let dy2 = level - p2.y
-        return (x: (p2.x * dy1 - p1.x * dy2) / (dy1 - dy2), y: level)
+    @discardableResult
+    public func isHiddenFirstYLabel(_ prop: Bool) -> Chart {
+        isHiddenFirstYLabel = prop
+        return self
     }
 }
 
@@ -1193,3 +1282,4 @@ extension Sequence where Element == Double {
         return self.max() ?? 0.0
     }
 }
+
