@@ -54,6 +54,9 @@ open class ChartSeries {
         below: UIColor,
         zeroLevel: Double
     ) = (above: .blue, below: .red, 0)
+    
+    open var pieColors:[UIColor]?
+    open var pieLabelColor: UIColor?
 
     public init(_ data: [Double]) {
         self.data = []

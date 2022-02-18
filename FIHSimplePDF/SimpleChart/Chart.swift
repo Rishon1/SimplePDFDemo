@@ -65,6 +65,7 @@ public enum ChartLabelOrientation {
 public enum ChartType {
     case line
     case column
+    case pie
 }
 
 
@@ -293,6 +294,14 @@ open class Chart: UIControl {
     /// y轴第一个刻度是否展示，默认隐藏
     fileprivate var isHiddenFirstYLabel = true
     
+    /// 柱狀圖點擊後顏色
+    fileprivate var columnSelectColor: UIColor = .blue
+    
+    /// 柱狀圖y軸最大label值， 設置完此屬性 可以不用設置yLabels
+    fileprivate var yAxisMaxValue: Double? = 0.0
+    /// x轴2个竖线直线存在的柱状图个数（用于计算柱状图宽度）,默认一半宽度
+    fileprivate var singleSpaceColumCount: Int = 1
+    
     fileprivate var pointViewArr: [ChartPointView] = []
 
     fileprivate var highlightShapeLayer: CAShapeLayer!
@@ -308,6 +317,34 @@ open class Chart: UIControl {
     // Represent a set of points corresponding to a segment line on the chart.
     typealias ChartLineSegment = [ChartPoint]
 
+    // 🔥🔥🔥🔥🔥🔥Pie 相关属性💧💧💧💧💧💧💧
+    private var radius:CGFloat = 0
+    private var centerPoint:CGPoint = .zero
+    private var distance:CGFloat = 10
+    
+    private var usePercentValuesEnabled = true
+    
+    private var pieLabelTextFont:UIFont = .systemFont(ofSize: 11)
+    /// 是否为空心圆
+    private var drawHoleEnabled = false
+    /// 空心半径黄金比例
+    private var holeRadiusPercent = 0.5
+    /// 空心圆的颜色
+    private var holeColor: UIColor = .white
+    
+    /// 是否显示中心文字
+    private var drawCenterTextEnabled = false
+    /// 中心文案
+    private var centerText: String = ""
+    private var centerTextFont: UIFont = .systemFont(ofSize: 15)
+    private var centerTextColor: UIColor = .black
+    
+    private var selectedLayer:CAShapeLayer?//选中的layer临时变量
+    private var lineDistance:CGFloat = 10
+    /// 動畫執行方式
+    private var animateType: CAMediaTimingFunctionName = .easeInEaseOut
+    
+    
     // MARK: initializations
 
     override public init(frame: CGRect) {
@@ -393,63 +430,88 @@ open class Chart: UIControl {
     }
 
     fileprivate func drawChart() {
-
-        drawingHeight = bounds.height - bottomInset - topInset
-        drawingWidth = bounds.width
-
-        let minMax = getMinMax()
-        min = minMax.min
-        max = minMax.max
-
-        highlightShapeLayer = nil
-
-        // Remove things before drawing, e.g. when changing orientation
-
-        for view in self.subviews {
-            view.removeFromSuperview()
-        }
-        for layer in layerStore {
-            layer.removeFromSuperlayer()
-        }
-        layerStore.removeAll()
-        pointViewArr.removeAll()
         
-        //先绘制 Y轴
-        if showYLabelsAndGrid && (yLabels != nil || series.count > 0) {
-            drawLabelsAndGridOnYAxis()
+        if chartType == .pie {
+            
+            for view in self.subviews {
+                view.removeFromSuperview()
+            }
+            for layer in layerStore {
+                layer.removeFromSuperlayer()
+            }
+            layerStore.removeAll()
+            
+            //1.计算半径
+            if bounds.width < radius*2 {
+                self.radius = bounds.width/2
+            }
+            //2.计算中心点
+            self.centerPoint = CGPoint(x: bounds.width/2, y: bounds.height/2)
+            
+            //3. 开始绘制
+            if !self.series.isEmpty {
+                drawPieChart()
+            }
+            
         }
-        //绘制边框
-        drawAxes()
-        
-        //绘制 x轴
-        if showXLabelsAndGrid && (xLabels != nil || series.count > 0) {
-            drawLabelsAndGridOnXAxis()
-        }
-        
-        // Draw content
-        for (index, series) in self.series.enumerated() {
+        else {
+            drawingHeight = bounds.height - bottomInset - topInset
+            drawingWidth = bounds.width
 
-            // Separate each line in multiple segments over and below the x axis
-            let segments = Chart.segmentLine(series.data as ChartLineSegment, zeroLevel: series.colors.zeroLevel, xZeroLinePoint: xZeroLinePoint)
+            let minMax = getMinMax()
+            min = minMax.min
+            max = minMax.max
 
-            segments.forEach({ segment in
-                let scaledXValues = scaleValuesOnXAxis( segment.map { $0.x } )
-                let scaledYValues = scaleValuesOnYAxis( segment.map { $0.y } )
-                
-                //柱状图
-                if chartType == .column {
-                    drawColumn(scaledXValues, yValues: scaledYValues, seriesIndex: index)
-                }
-                else {
-                    //默认折线图
-                    if series.line {
-                        drawLine(scaledXValues, yValues: scaledYValues, seriesIndex: index, pointType: series.pointType)
+            highlightShapeLayer = nil
+
+            // Remove things before drawing, e.g. when changing orientation
+
+            for view in self.subviews {
+                view.removeFromSuperview()
+            }
+            for layer in layerStore {
+                layer.removeFromSuperlayer()
+            }
+            layerStore.removeAll()
+            pointViewArr.removeAll()
+            
+            //先绘制 Y轴
+            if showYLabelsAndGrid && (yLabels != nil || series.count > 0) {
+                drawLabelsAndGridOnYAxis()
+            }
+            //绘制边框
+            drawAxes()
+            
+            //绘制 x轴
+            if showXLabelsAndGrid && (xLabels != nil || series.count > 0) {
+                drawLabelsAndGridOnXAxis()
+            }
+            
+            // Draw content
+            for (index, series) in self.series.enumerated() {
+
+                // Separate each line in multiple segments over and below the x axis
+                let segments = Chart.segmentLine(series.data as ChartLineSegment, zeroLevel: series.colors.zeroLevel, xZeroLinePoint: xZeroLinePoint)
+
+                segments.forEach({ segment in
+                    let scaledXValues = scaleValuesOnXAxis( segment.map { $0.x } )
+                    let scaledYValues = scaleValuesOnYAxis( segment.map { $0.y } )
+                    
+                    //柱状图
+                    if chartType == .column {
+                        drawColumn(scaledXValues, yValues: scaledYValues, seriesIndex: index)
                     }
-                    if series.area {
-                        drawArea(scaledXValues, yValues: scaledYValues, seriesIndex: index)
+                    else {
+                        //默认折线图
+                        if series.line {
+                            drawLine(scaledXValues, yValues: scaledYValues, seriesIndex: index, pointType: series.pointType)
+                        }
+                        if series.area {
+                            drawArea(scaledXValues, yValues: scaledYValues, seriesIndex: index)
+                        }
                     }
-                }
-            })
+                })
+            }
         }
 
     }
@@ -961,8 +1023,13 @@ extension Chart {
         
         for i in 0..<yValues.count {
             let y = yValues[i]
-            let width = columnWidthSpace/2.0
-            let viewX = CGFloat(xValues[i]) + self.yLabelMaxWidth + columnWidthSpace/2.0 - width/2.0
+            var width = columnWidthSpace / 2.0
+            
+            if singleSpaceColumCount != 1 {
+                width = (columnWidthSpace - 1.0*Double((singleSpaceColumCount + 1))) / Double(singleSpaceColumCount)
+            }
+            
+            let viewX = CGFloat(xValues[i]) + self.yLabelMaxWidth + (singleSpaceColumCount == 1 ? width/2.0 : 1.0)
             let viewY = CGFloat(y)
             let height = bounds.height - xLineEndSpace - viewY
             
@@ -976,6 +1043,145 @@ extension Chart {
             self.pointViewArr.append(columnView)
         }
     }
+    
+    // 🔥🔥🔥🔥🔥🔥绘制饼状图💧💧💧💧💧💧💧
+    fileprivate func drawPieChart() {
+        var start = -CGFloat.pi/2
+        var end = start
+        //计算比例
+        let datas = self.series.first!.data.map({$0.y})
+        let sums = datas.reduce(0) { $0+$1}
+        for index in 0 ..< datas.count {
+            let pieLayer = ChartPieLayer()
+            pieLayer.curIndex = index
+            end = start + CGFloat.pi * 2.0 * CGFloat(datas[index]/sums)
+            let piePath = UIBezierPath()
+            piePath.move(to: centerPoint)
+            piePath.addArc(withCenter:centerPoint, radius: radius, startAngle: start, endAngle: end, clockwise: true)
+            
+            let pieFillColor = series.first!.pieColors![index].cgColor
+            pieLayer.fillColor = pieFillColor
+            pieLayer.path = piePath.cgPath
+            
+            pieLayer.startAngle = start
+            pieLayer.endAngle = end
+            start = end
+            layer.addSublayer(pieLayer)
+            layerStore.append(pieLayer)
+            
+            //添加指向线
+            let middleAngle = (pieLayer.startAngle+pieLayer.endAngle)/2
+            let newPosition = CGPoint(x: centerPoint.x + (radius)*cos(middleAngle), y: centerPoint.y + (radius)*sin(middleAngle))
+
+            //划折线
+            let pointLayer = ChartPieLayer()
+            pointLayer.lineCap = .round
+            pointLayer.lineJoin = .round
+            let pointPath = UIBezierPath()
+            pointPath.move(to: newPosition)
+            var firstLinePoint = CGPoint.zero
+            if newPosition.x >= centerPoint.x {
+                if newPosition.y >= centerPoint.y {
+                    //第一像限
+                    firstLinePoint = CGPoint.init(x: newPosition.x + lineDistance*cos(CGFloat.pi/8), y: newPosition.y + lineDistance*sin(CGFloat.pi*7/32))
+                }else {
+                    //第四象限
+                    firstLinePoint = CGPoint.init(x: newPosition.x + lineDistance*cos(CGFloat.pi/6 + CGFloat.pi/4), y: newPosition.y + lineDistance*sin(CGFloat.pi*3/2 + CGFloat.pi/4))
+                }
+            }else {
+                if newPosition.y > centerPoint.y {
+                    firstLinePoint = CGPoint.init(x: newPosition.x + lineDistance*cos(CGFloat.pi*0.75), y: newPosition.y + lineDistance*sin(CGFloat.pi*0.75))
+                }else {
+                    firstLinePoint = CGPoint.init(x: newPosition.x + lineDistance*cos(CGFloat.pi*1.25), y: newPosition.y + lineDistance*sin(CGFloat.pi*1.25))
+                }
+            }
+            pointPath.addLine(to: firstLinePoint)
+            let x:CGFloat = firstLinePoint.x > centerPoint.x ? 40 : -40
+            let secondPoint = CGPoint(x: firstLinePoint.x + x, y: firstLinePoint.y)
+            pointPath.addLine(to: secondPoint)
+            pointLayer.strokeColor = series.first!.pieLabelColor == nil ? pieFillColor : series.first!.pieLabelColor!.cgColor
+            pointLayer.lineWidth = 1
+            pointLayer.fillColor = UIColor.clear.cgColor
+            pointLayer.path = pointPath.cgPath
+            layer.addSublayer(pointLayer)
+            layerStore.append(pointLayer)
+            
+            var value = "\(datas[index])"
+            
+            if usePercentValuesEnabled {
+                let percent = datas[index] / datas.reduce(0, +) * 100.0
+                value = "\(String(format: "%.1f", percent))%"
+            }
+            if !xLabelsData!.isEmpty && index < xLabelsData!.count{
+                value = "\(xLabelsData![index])\n(\(value))"
+            }
+            
+            let str:String = value
+            let size = CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
+            let rect = str.boundingRect(with: size, options: [.usesLineFragmentOrigin], attributes: [.font: pieLabelTextFont, .foregroundColor:pieFillColor], context: nil)
+            addTextLayer(str, frame: CGRect(x: secondPoint.x - rect.width/2, y: secondPoint.y-rect.height - 2.0, width: rect.width, height: rect.height), font: pieLabelTextFont, color:pieFillColor)
+        }
+        
+        createAnimatedMaskLayer()
+        
+        let view = UIView(frame: CGRect(origin: CGPoint.zero, size: CGSize(width: radius * 2.0 * holeRadiusPercent, height: radius * 2.0 * holeRadiusPercent)))
+        view.center = self.centerPoint
+        view.backgroundColor = .white
+        view.isUserInteractionEnabled = false
+        view.layer.cornerRadius = radius * 2.0 * holeRadiusPercent / 2.0
+        self.addSubview(view)
+        
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [self] in
+            
+            let centerLabel = UILabel()
+            centerLabel.text = centerText
+            centerLabel.font = centerTextFont
+            centerLabel.textColor = centerTextColor
+            centerLabel.textAlignment = .center
+            centerLabel.numberOfLines = 0
+            centerLabel.sizeToFit()
+            centerLabel.center = self.centerPoint
+            self.addSubview(centerLabel)
+        }
+        
+    }
+    
+    fileprivate func addTextLayer(_ text:String, frame:CGRect, font:UIFont, color:CGColor?) {
+        let textLayer = CATextLayer()
+        textLayer.string = text
+        textLayer.alignmentMode = .center
+        textLayer.fontSize = font.pointSize
+        textLayer.foregroundColor = color
+        textLayer.contentsScale = UIScreen.main.scale
+        textLayer.isWrapped = false
+        textLayer.frame = frame
+        layer.addSublayer(textLayer)
+    }
+    
+    fileprivate func createAnimatedMaskLayer() {
+        let maskLayer = CAShapeLayer()
+        let maskPath = UIBezierPath(arcCenter: centerPoint, radius: radius/2 + distance/2 + 50, startAngle: -CGFloat.pi/2, endAngle: CGFloat.pi * 1.5, clockwise: true)
+        //lineWidth属性, 它有一半的宽度是超出path所包住的范围
+        maskLayer.lineWidth = radius + distance + 100
+        ////设置边框颜色为不透明，则可以通过边框的绘制来显示整个视图 任意颜色
+        maskLayer.strokeColor = UIColor.white.cgColor
+        maskLayer.strokeEnd = 0
+        maskLayer.path = maskPath.cgPath
+        //设置填充颜色为透明，可以通过设置半径来设置中心透明范围
+        maskLayer.fillColor = UIColor.clear.cgColor
+        layer.mask = maskLayer
+        
+        let animation = CABasicAnimation(keyPath: "strokeEnd")
+        animation.duration = 1
+        animation.fromValue = 0
+        animation.toValue = 1
+        animation.isRemovedOnCompletion = false
+        animation.fillMode = .forwards
+        animation.timingFunction = CAMediaTimingFunction(name: animateType)
+        maskLayer.add(animation, forKey: nil)
+    }
+    
 }
 
 // MARK: 🔥🔥🔥🔥🔥🔥Touch events💧💧💧💧💧💧💧
@@ -1004,7 +1210,17 @@ extension Chart {
                 pointView.transform = transform
                 pointView.isScaleBig = true
             }
-            
+            else if pointView.chartType == .column {
+                self.pointViewArr.forEach { pv in
+                    if pv.isScaleBig {
+                        pv.backgroundColor = series[pointView.seriesIndex!].color
+                        pv.isScaleBig = false
+                    }
+                    
+                }
+                pointView.isScaleBig = true
+                pointView.backgroundColor = columnSelectColor
+            }
             
             delegate?.pointViwDidClick(series[pointView.seriesIndex!].data[pointView.tag], xLabelsData: xLabelsData ?? [""], seriesIndex: pointView.seriesIndex!)
             
@@ -1076,13 +1292,66 @@ extension Chart {
 
     override open func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         
-        if !hideTouchLine {
-            handleTouchEvents(touches, event: event)
+        if chartType == .pie {
+            pieUpdateLayer(point: touches.first!.location(in: self))
         }
-        
+        else {
+            if !hideTouchLine {
+                handleTouchEvents(touches, event: event)
+            }
+        }
+    }
+    
+    fileprivate func pieUpdateLayer(point: CGPoint) {
+        if let layers = layer.sublayers {
+            for layer in layers {
+                if layer is ChartPieLayer {
+                    let curLayer = layer as! ChartPieLayer
+                    if curLayer.path!.contains(point){
+                        if selectedLayer != curLayer {
+                            let currPos = layer.position
+                            let middleAngle = (curLayer.startAngle + curLayer.endAngle)/2
+                            let newPos = CGPoint(x:currPos.x + distance * cos(middleAngle), y:currPos.y + distance * sin(middleAngle))
+                            layer.position = newPos
+                            if selectedLayer != nil {
+                                selectedLayer?.position = .zero
+                            }
+                            selectedLayer = curLayer
+                            
+                            //NSLog("========\(curLayer.curIndex)")
+                            delegate?.pointViwDidClick((series.first?.data[curLayer.curIndex])!, xLabelsData: xLabelsData!, seriesIndex: 0)
+                            
+                        }else {
+                            selectedLayer?.position = .zero
+                            selectedLayer = nil
+                        }
+                        break
+                    }
+                }
+            }
+        }
     }
 
     override open func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        if chartType == .pie {
+            return
+        }
+        
+        self.pointViewArr.forEach { pv in
+            if pv.isScaleBig {
+                if chartType == .line {
+                    var transform = pv.transform
+                    transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+                    pv.transform = transform
+                }
+                else if chartType == .column {
+                    pv.backgroundColor = series[pv.seriesIndex!].color
+                }
+                pv.isScaleBig = false
+            }
+        }
+        
         if !hideTouchLine {
             
             handleTouchEvents(touches, event: event)
@@ -1094,17 +1363,15 @@ extension Chart {
             delegate?.didEndTouchingChart(self)
         }
         
-        self.pointViewArr.forEach { pv in
-            if pv.isScaleBig {
-                var transform = pv.transform
-                transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
-                pv.transform = transform
-                pv.isScaleBig = false
-            }
-        }
+        
     }
 
     override open func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        
+        if chartType == .pie {
+            return
+        }
+        
         if !hideTouchLine {
             handleTouchEvents(touches, event: event)
         }
@@ -1272,6 +1539,132 @@ extension Chart {
         isHiddenFirstYLabel = prop
         return self
     }
+    
+    @discardableResult
+    public func columnSelectColor(_ prop: UIColor) -> Chart {
+        columnSelectColor = prop
+        return self
+    }
+    
+    @discardableResult
+    public func yAxisLabelMaxValue(_ prop: Double) -> Chart {
+        yAxisMaxValue = prop
+        
+        if prop > 3000.0 {
+            yLabels = [0.0, 1000.0, 2000.0, 3000.0, 4000.0, 5000.0]
+        }
+        else if prop > 1500.0 {
+            yLabels = [0.0, 600.0, 1200.0, 1800.0, 2400.0, 3000.0]
+        }
+        else if prop > 1000.0 {
+            yLabels = [0.0, 300.0, 600.0, 900.0, 1200.0, 1500.0]
+        }
+        else if prop > 500 {
+            yLabels = [0.0, 200.0, 400.0, 600.0, 800.0, 1000.0]
+        }
+        else if prop > 200 {
+            yLabels = [0.0, 100.0, 200.0, 300.0, 400.0, 500.0]
+        }
+        else if prop > 100 {
+            yLabels = [0.0, 50.0, 100.0, 150.0, 200.0]
+        }
+        else if prop > 50 {
+            yLabels = [0.0, 20.0, 40.0, 60.0, 80.0, 100.0]
+        }
+        else if prop > 20 {
+            yLabels = [0.0, 10.0, 20.0, 30.0, 40.0, 50.0]
+        }
+        else if prop > 10 {
+            yLabels = [0.0, 5.0, 10.0, 15.0, 20.0]
+        }
+        else if prop > 5 {
+            yLabels = [0.0, 2.0, 4.0, 6.0, 8.0, 10.0]
+        }
+        else {
+            yLabels = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
+        }
+        
+        return self
+    }
+    
+    @discardableResult
+    public func singleSpaceColumCount(_ prop: Int) -> Chart {
+        singleSpaceColumCount = prop
+        return self
+    }
+    
+    //🔥🔥🔥🔥🔥🔥Pie 属性💧💧💧💧💧💧💧
+    @discardableResult
+    public func radius(_ prop: CGFloat) -> Chart {
+        radius = prop
+        return self
+    }
+
+    @discardableResult
+    public func distance(_ prop: CGFloat) -> Chart {
+        distance = prop
+        return self
+    }
+    
+    @discardableResult
+    public func usePercentValuesEnabled(_ prop: Bool) -> Chart {
+        usePercentValuesEnabled = prop
+        return self
+    }
+    
+    @discardableResult
+    public func pieLabelTextFont(_ prop: UIFont) -> Chart {
+        pieLabelTextFont = prop
+        return self
+    }
+    
+    @discardableResult
+    public func drawHoleEnabled(_ prop: Bool) -> Chart {
+        drawHoleEnabled = prop
+        return self
+    }
+    
+    @discardableResult
+    public func holeRadiusPercent(_ prop: Double) -> Chart {
+        holeRadiusPercent = prop
+        return self
+    }
+    
+    
+    @discardableResult
+    public func holeColor(_ prop: UIColor) -> Chart {
+        holeColor = prop
+        return self
+    }
+    
+    @discardableResult
+    public func drawCenterTextEnabled(_ prop: Bool) -> Chart {
+        drawCenterTextEnabled = prop
+        return self
+    }
+    
+    
+    @discardableResult
+    public func centerText(_ prop: String, textFont: UIFont = .systemFont(ofSize: 15), textColor: UIColor = .black) -> Chart {
+        centerText = prop
+        centerTextFont = textFont
+        centerTextColor = textColor
+        return self
+    }
+    
+    @discardableResult
+    public func lineDistance(_ prop: CGFloat) -> Chart {
+        lineDistance = prop
+        return self
+    }
+    
+    @discardableResult
+    public func animateType(_ prop: CAMediaTimingFunctionName) -> Chart {
+        animateType = prop
+        return self
+    }
+    
+    
 }
 
 extension Sequence where Element == Double {

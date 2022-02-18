@@ -50,6 +50,7 @@ class ColumnViewController: UIViewController {
             .hideAroundLine(bottom: false)
             .hideTouchLine(true)
             .showPointView(true)
+            .columnSelectColor(UIColor(red: 86/255.0, green: 244/255.0, blue: 254/255.0, alpha: 1.0))
             .add(series)
     }
     

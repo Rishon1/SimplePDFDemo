@@ -17,6 +17,8 @@
 		1825355027B5EEDB0013A139 /* SimpleLineChartsViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1825354F27B5EEDB0013A139 /* SimpleLineChartsViewController.swift */; };
 		1825355227B60C0F0013A139 /* ChartPointView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1825355127B60C0F0013A139 /* ChartPointView.swift */; };
 		1825355D27BDD7970013A139 /* ColumnViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1825355C27BDD7970013A139 /* ColumnViewController.swift */; };
+		1825355F27BE1B330013A139 /* PieChartViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1825355E27BE1B330013A139 /* PieChartViewController.swift */; };
+		1825356127BE36410013A139 /* ChartPieLayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1825356027BE36410013A139 /* ChartPieLayer.swift */; };
 		1867EFA127704E20006B67BB /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1867EFA027704E20006B67BB /* AppDelegate.swift */; };
 		1867EFA327704E20006B67BB /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1867EFA227704E20006B67BB /* SceneDelegate.swift */; };
 		1867EFA827704E20006B67BB /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 1867EFA627704E20006B67BB /* Main.storyboard */; };
@@ -38,6 +40,8 @@
 		1825354F27B5EEDB0013A139 /* SimpleLineChartsViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleLineChartsViewController.swift; sourceTree = "<group>"; };
 		1825355127B60C0F0013A139 /* ChartPointView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartPointView.swift; sourceTree = "<group>"; };
 		1825355C27BDD7970013A139 /* ColumnViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColumnViewController.swift; sourceTree = "<group>"; };
+		1825355E27BE1B330013A139 /* PieChartViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PieChartViewController.swift; sourceTree = "<group>"; };
+		1825356027BE36410013A139 /* ChartPieLayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartPieLayer.swift; sourceTree = "<group>"; };
 		1867EF9D27704E20006B67BB /* FIHSimplePDF.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FIHSimplePDF.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		1867EFA027704E20006B67BB /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1867EFA227704E20006B67BB /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
@@ -70,6 +74,7 @@
 				1825354927B5EE0D0013A139 /* ChartSeries.swift */,
 				1825354A27B5EE0D0013A139 /* Chart.swift */,
 				1825355127B60C0F0013A139 /* ChartPointView.swift */,
+				1825356027BE36410013A139 /* ChartPieLayer.swift */,
 			);
 			path = SimpleChart;
 			sourceTree = "<group>";
@@ -111,6 +116,7 @@
 				1825352927B4A0DB0013A139 /* PieChartsViewController.swift */,
 				1825354F27B5EEDB0013A139 /* SimpleLineChartsViewController.swift */,
 				1825355C27BDD7970013A139 /* ColumnViewController.swift */,
+				1825355E27BE1B330013A139 /* PieChartViewController.swift */,
 			);
 			path = FIHSimplePDF;
 			sourceTree = "<group>";
@@ -265,7 +271,9 @@
 				1825352A27B4A0DB0013A139 /* PieChartsViewController.swift in Sources */,
 				1867EFA127704E20006B67BB /* AppDelegate.swift in Sources */,
 				1825355227B60C0F0013A139 /* ChartPointView.swift in Sources */,
+				1825355F27BE1B330013A139 /* PieChartViewController.swift in Sources */,
 				1867EFA327704E20006B67BB /* SceneDelegate.swift in Sources */,
+				1825356127BE36410013A139 /* ChartPieLayer.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
