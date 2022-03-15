@@ -332,6 +332,8 @@ open class Chart: UIControl {
     /// 空心圆的颜色
     private var holeColor: UIColor = .white
     
+    private var holeView: UIView?
+    
     /// 是否显示中心文字
     private var drawCenterTextEnabled = false
     /// 中心文案
@@ -344,6 +346,7 @@ open class Chart: UIControl {
     /// 動畫執行方式
     private var animateType: CAMediaTimingFunctionName = .easeInEaseOut
     
+    private var legendInfoShow: Bool = false
     
     // MARK: initializations
 
@@ -1124,11 +1127,16 @@ extension Chart {
         
         createAnimatedMaskLayer()
         
+        if legendInfoShow {
+            addLegendInfo()            
+        }
+        
         let view = UIView(frame: CGRect(origin: CGPoint.zero, size: CGSize(width: radius * 2.0 * holeRadiusPercent, height: radius * 2.0 * holeRadiusPercent)))
         view.center = self.centerPoint
         view.backgroundColor = .white
         view.isUserInteractionEnabled = false
         view.layer.cornerRadius = radius * 2.0 * holeRadiusPercent / 2.0
+        self.holeView = view
         self.addSubview(view)
         
         
@@ -1146,6 +1154,63 @@ extension Chart {
         }
         
     }
+    
+    fileprivate func addLegendInfo() {
+        let legendView = UIView(frame: CGRect(x: 0, y: self.centerPoint.y + self.radius + 20, width: self.frame.width, height: 20))
+        var lastView: UIView?
+        var firstLineView: UIView?
+        var y = 0.0
+        for (index, title) in xLabelsData!.enumerated() {
+            
+            let titleSize = (title as NSString).boundingRect(with: CGSize.zero, options: [.usesLineFragmentOrigin], attributes: [NSAttributedString.Key.font : UIFont.systemFont(ofSize: 10)], context: nil)
+            
+            var x = 5.0
+            if lastView != nil {
+                x = lastView!.frame.origin.x + lastView!.frame.width + 5
+            }
+            if x + 10 + titleSize.width + 5 > self.frame.width - 50 {
+                x = 5.0
+                y += 15.0
+                firstLineView = lastView
+            }
+            
+            let view = singleLegend(series.first!.pieColors![index], title: title, x:x, y:y, titleSize: titleSize.size)
+            lastView = view
+            legendView.addSubview(view)
+        }
+        var frame = legendView.frame
+        
+        if (firstLineView != nil) {
+            frame.size.width = firstLineView!.frame.origin.x + firstLineView!.frame.width
+        }
+        else {
+            frame.size.width = lastView!.frame.origin.x + lastView!.frame.width
+        }
+        
+        
+        legendView.frame = frame
+        legendView.center.x = self.centerPoint.x
+        self.addSubview(legendView)
+        
+    }
+    
+    fileprivate func singleLegend(_ vColor: UIColor, title: String, x: CGFloat, y:CGFloat, titleSize: CGSize) -> UIView{
+        
+        
+        let legView = UIView(frame: CGRect(x: x, y: y, width: titleSize.width + 15, height: 10))
+        let view = UIView(frame: CGRect(x: 0, y: 0, width: 10, height: 10))
+        view.backgroundColor = vColor
+        view.layer.cornerRadius = 5
+        legView.addSubview(view)
+        let titleLab = UILabel(frame: CGRect(x: view.frame.width + 3, y: 0, width: titleSize.width, height: 10))
+        titleLab.text = title
+        titleLab.font = .systemFont(ofSize: 10)
+        titleLab.textColor = .black
+        legView.addSubview(titleLab)
+        
+        return legView
+    }
+    
     
     fileprivate func addTextLayer(_ text:String, frame:CGRect, font:UIFont, color:CGColor?) {
         let textLayer = CATextLayer()
@@ -1664,6 +1729,11 @@ extension Chart {
         return self
     }
     
+    @discardableResult
+    public func legendInfoShow(_ prop: Bool) -> Chart {
+        legendInfoShow = prop
+        return self
+    }
     
 }
 

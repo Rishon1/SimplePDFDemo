@@ -17,15 +17,15 @@ class PieChartViewController: UIViewController {
         self.view.addSubview(charts)
         self.view.addSubview(bottomLabel)
         
-        let data = [10,20,30,60]
+        let data = [10,20,30,60, 5, 60, 70, 80, 90, 44]
         var datas:[(x: Double, y: Double)] = []
         for (index, item) in data.enumerated() {
             datas.append((x: Double(index), y: Double(item)))
         }
         let series = ChartSeries(data: datas)
-        series.pieColors = [.red, .yellow, .purple, .blue, .black]
+        series.pieColors = [.red, .yellow, .purple, .blue, .black, .yellow, .red, .blue, .brown, .darkGray]
         series.pieLabelColor = .black
-        charts.xLabelsData = ["BG", "BW", "跑步", "测试22222"]
+        charts.xLabelsData = ["BG", "BW", "跑步", "测试", "123", "234", "345", "456", "567", "123"]
         
         charts.chartType(.pie)
             .radius((view.bounds.width - 10) * 0.3)
@@ -36,13 +36,15 @@ class PieChartViewController: UIViewController {
             .pieLabelTextFont(.systemFont(ofSize: 10))
             .centerText("50\n分鐘", textColor: .black)
             .usePercentValuesEnabled(true)
+            .legendInfoShow(true)
             .animateType(.easeInEaseOut)
             .add(series)
     }
 
     lazy var charts: Chart = {
-        let chart = Chart(frame: CGRect(x: 5, y: 100, width: view.bounds.width - 10, height: 300))
+        let chart = Chart(frame: CGRect(x: 5, y: 100, width: view.bounds.width - 10, height: 330))
         chart.delegate = self
+        chart.backgroundColor = .gray
         return chart
     }()
     
